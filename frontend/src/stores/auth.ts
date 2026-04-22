@@ -22,6 +22,8 @@ export const useAuthStore = defineStore('auth', () => {
         const data = await res.json()
         user.value = data.user
       }
+    } catch {
+      // backend unreachable — treat as unauthenticated
     } finally {
       isLoading.value = false
     }

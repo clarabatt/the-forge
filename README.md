@@ -24,7 +24,13 @@ cp .env.example .env
 
 ### 2. Set up the database
 
-If running Postgres locally:
+Start Postgres via Docker (recommended — creates the `forge` user and DB automatically):
+
+```bash
+docker compose up postgres -d
+```
+
+Or if running Postgres locally without Docker:
 
 ```bash
 sudo -u postgres psql -c "CREATE USER forge WITH PASSWORD 'forge';"
@@ -38,6 +44,8 @@ uv sync
 ```
 
 ### 4. Run migrations
+
+All commands must be run from the **project root** (where `alembic.ini` lives):
 
 ```bash
 uv run alembic upgrade head
