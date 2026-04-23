@@ -84,13 +84,13 @@ docker compose up
 
 Services:
 
-| Service   | URL                         |
-|-----------|-----------------------------|
-| Frontend  | http://localhost:5173        |
-| Backend   | http://localhost:8000        |
-| Swagger   | http://localhost:8000/docs   |
-| Adminer   | http://localhost:8080        |
-| Postgres  | localhost:5432               |
+| Service  | URL                        |
+| -------- | -------------------------- |
+| Frontend | http://localhost:5173      |
+| Backend  | http://localhost:8000      |
+| Swagger  | http://localhost:8000/docs |
+| Adminer  | http://localhost:8080      |
+| Postgres | localhost:5432             |
 
 Run migrations inside the backend container:
 
@@ -141,13 +141,14 @@ docker run -p 8000:8000 --env-file .env the-forge
 
 ## Environment variables
 
-| Variable                | Default                                      | Description                        |
-|-------------------------|----------------------------------------------|------------------------------------|
-| `DATABASE_URL`          | `postgresql://forge:forge@localhost:5432/forge` | Postgres connection string       |
-| `SECRET_KEY`            | —                                            | Session signing key                |
-| `GOOGLE_CLIENT_ID`      | —                                            | OAuth 2.0 client ID                |
-| `GOOGLE_CLIENT_SECRET`  | —                                            | OAuth 2.0 client secret            |
-| `GOOGLE_REDIRECT_URI`   | `http://localhost:8000/auth/google/callback` | OAuth callback URL                 |
-| `GCS_BUCKET`            | `the-forge-files`                            | GCS bucket name                    |
-| `ANTHROPIC_API_KEY`     | —                                            | Anthropic API key                  |
-| `FRONTEND_URL`          | `http://localhost:5173`                      | Allowed CORS origin                |
+| Variable               | Default                                         | Description                |
+| ---------------------- | ----------------------------------------------- | -------------------------- |
+| `DATABASE_URL`         | `postgresql://forge:forge@localhost:5432/forge` | Postgres connection string |
+| `SECRET_KEY`           | —                                               | Session signing key        |
+| `GOOGLE_CLIENT_ID`     | —                                               | OAuth 2.0 client ID        |
+| `GOOGLE_CLIENT_SECRET` | —                                               | OAuth 2.0 client secret    |
+| `GOOGLE_REDIRECT_URI`  | `http://localhost:8000/auth/google/callback`    | OAuth callback URL         |
+| `GCS_BUCKET`           | `the-forge-files`                               | GCS bucket name            |
+| `ANTHROPIC_API_KEY`    | —                                               | Anthropic API key          |
+| `GEMINI_API_KEY`       | —                                               | Gemini API key             |
+| `FRONTEND_URL`         | `http://localhost:5173`                         | Allowed CORS origin        |

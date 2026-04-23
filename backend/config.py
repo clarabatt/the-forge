@@ -15,6 +15,7 @@ class Settings(BaseSettings):
     current_template_version: str = "v1"
 
     anthropic_api_key: str = ""
+    gemini_api_key: str = ""
 
     monthly_cost_cap_usd: float = 5.00
     burst_limit_runs: int = 3
