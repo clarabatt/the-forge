@@ -19,7 +19,7 @@ AI-powered résumé tailoring. Upload a base `.docx`, paste a job description, a
 
 ```bash
 cp .env.example .env
-# Fill in GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, ANTHROPIC_API_KEY
+# Fill in GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GEMINI_API_KEY
 ```
 
 ### 2. Set up the database
@@ -149,6 +149,5 @@ docker run -p 8000:8000 --env-file .env the-forge
 | `GOOGLE_CLIENT_SECRET` | —                                               | OAuth 2.0 client secret    |
 | `GOOGLE_REDIRECT_URI`  | `http://localhost:8000/auth/google/callback`    | OAuth callback URL         |
 | `GCS_BUCKET`           | `the-forge-files`                               | GCS bucket name            |
-| `ANTHROPIC_API_KEY`    | —                                               | Anthropic API key          |
 | `GEMINI_API_KEY`       | —                                               | Gemini API key             |
 | `FRONTEND_URL`         | `http://localhost:5173`                         | Allowed CORS origin        |

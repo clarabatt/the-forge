@@ -52,11 +52,11 @@ Speed up the process of tailoring a base résumé for each job application. The 
 
 ### Agents
 
-**Do not use MCP for agent orchestration.** MCP (Model Context Protocol) is a tool-calling protocol — it gives an LLM access to external resources. It is not an orchestration framework. The three agents here are sequential API calls in Python, each receiving the prior output as input context. Using the Anthropic SDK directly with `response_format: {"type": "json_object"}` is simpler, more debuggable, and does not require MCP infrastructure.
+**Do not use MCP for agent orchestration.** MCP (Model Context Protocol) is a tool-calling protocol — it gives an LLM access to external resources. It is not an orchestration framework. The three agents here are sequential API calls in Python, each receiving the prior output as input context. Using the Google AI SDK directly with `response_format: {"type": "json_object"}` is simpler, more debuggable, and does not require MCP infrastructure.
 
 | Technology                    | Rationale                                                                                                                      |
 | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| Anthropic SDK (Python)        | Direct access to claude-sonnet-4-20250514 with structured JSON output mode.                                                    |
+| Google AI SDK (Python)        | Direct access to gemini-1.5-pro with structured JSON output mode.                                                    |
 | Structured output (JSON mode) | All agent outputs are typed JSON. Parse failures trigger a retry, never a crash.                                               |
 | Cloud Run Jobs                | Long-running containers for agent execution. Avoids Cloud Run's 60s request timeout — LLM chains regularly hit 60–90s.         |
 | Cloud Tasks                   | Queue layer. HTTP callbacks with built-in retry and deduplication. FastAPI enqueues a task; the task triggers a Cloud Run Job. |
@@ -187,7 +187,7 @@ This table is **append-only**. Never update rows. Compute totals via a Postgres 
 | `user_id`        | UUID FK → `users.id`                   |                                                               |
 | `application_id` | UUID FK → `applications.id` (nullable) |                                                               |
 | `agent_name`     | Enum                                   | `JD`, `RESUME`, `DIFF`, `JUDGE_RETRY`.                        |
-| `model`          | String                                 | e.g. `claude-sonnet-4-20250514`. Store the full model string. |
+| `model`          | String                                 | e.g. `gemini-1.5-pro`. Store the full model string. |
 | `input_tokens`   | Integer                                |                                                               |
 | `output_tokens`  | Integer                                |                                                               |
 | `created_at`     | DateTime                               |                                                               |
@@ -224,11 +224,11 @@ Even if the chat UI is not built in v1, create this table now. Adding a FK colum
 
 ### Why not MCP
 
-MCP is a tool-calling protocol. It is appropriate when an LLM needs to invoke external resources (search, file read, DB query) at inference time. It is not appropriate for chaining three sequential inference calls with shared context. Use the Anthropic Python SDK directly.
+MCP is a tool-calling protocol. It is appropriate when an LLM needs to invoke external resources (search, file read, DB query) at inference time. It is not appropriate for chaining three sequential inference calls with shared context. Use the Google AI Python SDK directly.
 
 ### Agent chain
 
-All agents use `claude-sonnet-4-20250514` with `response_format: {"type": "json_object"}`. If JSON parsing fails, the job retries once with the same input before transitioning to `FAILED`.
+All agents use `gemini-1.5-pro` with `response_format: {"type": "json_object"}`. If JSON parsing fails, the job retries once with the same input before transitioning to `FAILED`.
 
 **1. JD Agent**
 
