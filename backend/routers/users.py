@@ -1,9 +1,18 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
+
+from backend.auth import get_current_user
+from backend.database.models import User
 
 router = APIRouter()
 
 
 @router.get("/me")
-async def get_me():
-    # TODO: implement after auth middleware
-    return {"user": None}
+async def get_me(user: User = Depends(get_current_user)):
+    return {
+        "user": {
+            "id": str(user.id),
+            "email": user.email,
+            "full_name": user.full_name,
+            "picture_url": user.picture_url,
+        }
+    }
