@@ -100,6 +100,38 @@ docker compose exec backend uv run alembic upgrade head
 
 ---
 
+## Testing
+
+Tests live in `backend/tests/` and run against a dedicated Postgres instance on port 5434 (separate from dev on 5433).
+
+### Start the test database
+
+```bash
+make test-db-up
+```
+
+### Run the suite
+
+```bash
+make test
+```
+
+### Stop the test database
+
+```bash
+make test-db-down
+```
+
+To wipe and restart the test database (e.g. after schema changes):
+
+```bash
+make test-db-reset
+```
+
+The test suite uses real database queries — no mocks for internal code. Only external HTTP calls (Google OAuth) are intercepted with `respx`. Tables are truncated between tests, so the database persists between runs and only needs to be started once per session.
+
+---
+
 ## Production build
 
 Builds the Vue app and serves it as static files from FastAPI:
@@ -121,9 +153,11 @@ docker run -p 8000:8000 --env-file .env the-forge
 │   ├── database/
 │   │   ├── models.py    # SQLModel table definitions
 │   │   ├── session.py   # DB engine + session dependency
+│   │   ├── repositories/# Repository classes per model
 │   │   └── migrations/  # Alembic migrations
 │   ├── routers/         # FastAPI route handlers
 │   ├── services/        # Mammoth parser, python-docx writer, GCS client
+│   ├── tests/           # pytest suite (repositories + routes)
 │   ├── config.py        # Settings (pydantic-settings + .env)
 │   └── main.py          # FastAPI app entry point
 ├── frontend/

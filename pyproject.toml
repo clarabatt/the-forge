@@ -30,7 +30,13 @@ dev-dependencies = [
     "pytest>=8.3.0",
     "pytest-asyncio>=0.24.0",
     "httpx>=0.28.0",
+    "respx>=0.21.0",
 ]
+
+[tool.pytest.ini_options]
+testpaths = ["backend/tests"]
+pythonpath = ["."]
+asyncio_mode = "auto"
 
 [tool.hatch.build.targets.wheel]
 packages = ["backend"]
