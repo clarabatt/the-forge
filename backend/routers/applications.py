@@ -3,23 +3,33 @@ from typing import AsyncGenerator
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
-from sqlmodel import Session, select
+from sqlmodel import Session
 
-from backend.database.models import Application
+from backend.auth import get_current_user
+from backend.database.models import User
+from backend.database.repositories import ApplicationRepository
 from backend.database.session import get_session
 
 router = APIRouter()
 
 
 @router.get("/")
-def list_applications(session: Session = Depends(get_session)):
-    # TODO: filter by authenticated user
-    return session.exec(select(Application)).all()
+def list_applications(
+    session: Session = Depends(get_session),
+    user: User = Depends(get_current_user),
+):
+    repo = ApplicationRepository(session)
+    return repo.list_by_user(user.id)
 
 
 @router.get("/{application_id}")
-def get_application(application_id: uuid.UUID, session: Session = Depends(get_session)):
-    app = session.get(Application, application_id)
+def get_application(
+    application_id: uuid.UUID,
+    session: Session = Depends(get_session),
+    user: User = Depends(get_current_user),
+):
+    repo = ApplicationRepository(session)
+    app = repo.get_by_user_and_id(user.id, application_id)
     if not app:
         raise HTTPException(status_code=404, detail="Application not found")
     return app

@@ -5,7 +5,7 @@ TEST_DB_USER      = forge
 TEST_DB_PASS      = forge
 TEST_DATABASE_URL = postgresql://$(TEST_DB_USER):$(TEST_DB_PASS)@localhost:$(TEST_DB_PORT)/$(TEST_DB_NAME)
 
-.PHONY: test-db-up test-db-down test-db-reset test
+.PHONY: test-db-up test-db-down test-db-reset test seed
 
 test-db-up:
 	docker run -d \
@@ -26,3 +26,6 @@ test-db-reset: test-db-down test-db-up
 
 test:
 	TEST_DATABASE_URL=$(TEST_DATABASE_URL) uv run pytest -v
+
+seed:
+	uv run python -m backend.scripts.seed
