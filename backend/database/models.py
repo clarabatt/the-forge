@@ -83,6 +83,7 @@ class Application(SQLModel, table=True):
     template_version: str = Field(default="v1")
     retry_count: int = Field(default=0)
     error_message: Optional[str] = None
+    analysis_feedback: Optional[str] = None  # JSON string: {overall_assessment, strong_points, weak_points, recommended_changes}
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
     user: Optional[User] = Relationship(back_populates="applications")

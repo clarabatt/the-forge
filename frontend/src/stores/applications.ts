@@ -24,12 +24,20 @@ export interface Skill {
   rank: number
 }
 
+export interface AnalysisFeedback {
+  overall_assessment: string
+  strong_points: string[]
+  weak_points: string[]
+  recommended_changes: string[]
+}
+
 export interface Application {
   id: string
   company_name: string
   job_title: string
   status: PipelineStatus
   application_status: 'applied' | 'denied' | 'cancelled' | 'approved'
+  analysis_feedback: string | null
   created_at: string
 }
 

@@ -1,34 +1,37 @@
 <script setup lang="ts">
-import { onMounted, ref, watch } from 'vue'
-import { useApplicationsStore } from '@/stores/applications'
+import { onMounted, ref, watch } from "vue";
+import { useApplicationsStore } from "@/stores/applications";
 
-const props = defineProps<{ applicationId: string }>()
+const props = defineProps<{ applicationId: string }>();
 
-const store = useApplicationsStore()
-const html = ref('')
-const isLoading = ref(false)
-const error = ref(false)
+const store = useApplicationsStore();
+const html = ref("");
+const isLoading = ref(false);
+const error = ref(false);
 
 async function load(id: string) {
-  isLoading.value = true
-  html.value = ''
-  error.value = false
+  isLoading.value = true;
+  html.value = "";
+  error.value = false;
   try {
-    const result = await store.fetchResumeHtml(id)
+    const result = await store.fetchResumeHtml(id);
     if (!result) {
-      error.value = true
+      error.value = true;
     } else {
-      html.value = result
+      html.value = result;
     }
   } catch {
-    error.value = true
+    error.value = true;
   } finally {
-    isLoading.value = false
+    isLoading.value = false;
   }
 }
 
-onMounted(() => load(props.applicationId))
-watch(() => props.applicationId, (id) => load(id))
+onMounted(() => load(props.applicationId));
+watch(
+  () => props.applicationId,
+  (id) => load(id),
+);
 </script>
 
 <template>
@@ -55,10 +58,11 @@ watch(() => props.applicationId, (id) => load(id))
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
-  padding: 48px 56px;
+  padding: 44px 52px;
   min-height: 640px;
+  max-width: 900px;
   color: #111;
-  font-family: 'Georgia', 'Times New Roman', serif;
+  font-family: "Georgia", "Times New Roman", serif;
 }
 
 // skeleton loader
@@ -81,8 +85,13 @@ watch(() => props.applicationId, (id) => load(id))
 }
 
 @keyframes shimmer {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.4; }
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
 }
 
 .resume-error {

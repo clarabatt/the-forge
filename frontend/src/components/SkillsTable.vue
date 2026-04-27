@@ -1,77 +1,92 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
-import { useApplicationsStore, type Skill } from '@/stores/applications'
+import { computed, onMounted, ref, watch } from "vue";
+import { useApplicationsStore, type AnalysisFeedback, type Skill } from "@/stores/applications";
 
-const props = defineProps<{ applicationId: string }>()
+const props = defineProps<{ applicationId: string }>();
 
-const store = useApplicationsStore()
-const skills = ref<Skill[]>([])
-const isLoading = ref(false)
-const error = ref(false)
+const store = useApplicationsStore();
+const skills = ref<Skill[]>([]);
+const isLoading = ref(false);
+const error = ref(false);
 
-type SortKey = 'skill_name' | 'category' | 'match_status'
-const sortKey = ref<SortKey>('match_status')
-const sortDir = ref<1 | -1>(1)
+type SortKey = "skill_name" | "category" | "match_status";
+const sortKey = ref<SortKey>("match_status");
+const sortDir = ref<1 | -1>(1);
 
 function toggleSort(key: SortKey) {
   if (sortKey.value === key) {
-    sortDir.value = sortDir.value === 1 ? -1 : 1
+    sortDir.value = sortDir.value === 1 ? -1 : 1;
   } else {
-    sortKey.value = key
-    sortDir.value = 1
+    sortKey.value = key;
+    sortDir.value = 1;
   }
 }
 
-const matchOrder = (s: Skill) => s.match_status === 'found_in_resume' ? 0 : 1
+const matchOrder = (s: Skill) => (s.match_status === "found_in_resume" ? 0 : 1);
 
 const sortedSkills = computed(() =>
   [...skills.value].sort((a, b) => {
-    let cmp = 0
-    if (sortKey.value === 'match_status') {
-      cmp = matchOrder(a) - matchOrder(b)
-    } else if (sortKey.value === 'skill_name') {
-      cmp = a.skill_name.localeCompare(b.skill_name)
+    let cmp = 0;
+    if (sortKey.value === "match_status") {
+      cmp = matchOrder(a) - matchOrder(b);
+    } else if (sortKey.value === "skill_name") {
+      cmp = a.skill_name.localeCompare(b.skill_name);
     } else {
-      cmp = a.category.localeCompare(b.category)
+      cmp = a.category.localeCompare(b.category);
     }
-    return cmp * sortDir.value
-  })
-)
+    return cmp * sortDir.value;
+  }),
+);
 
 const feedback = computed(() => {
-  if (!skills.value.length) return null
+  if (!skills.value.length) return null;
 
-  const total = skills.value.length
-  const found = skills.value.filter((s) => s.match_status === 'found_in_resume').length
-  const missing = skills.value.filter((s) => s.match_status === 'missing')
-  const matchPct = Math.round((found / total) * 100)
+  const total = skills.value.length;
+  const found = skills.value.filter((s) => s.match_status === "found_in_resume").length;
+  const missing = skills.value.filter((s) => s.match_status === "missing");
+  const matchPct = Math.round((found / total) * 100);
 
   // top missing skills ordered by rank (lower rank = more critical)
-  const topGaps = [...missing].sort((a, b) => a.rank - b.rank).slice(0, 3)
+  const topGaps = [...missing].sort((a, b) => a.rank - b.rank).slice(0, 3);
 
   // missing count per category
   const byCategory = missing.reduce<Record<string, number>>((acc, s) => {
-    acc[s.category] = (acc[s.category] ?? 0) + 1
-    return acc
-  }, {})
+    acc[s.category] = (acc[s.category] ?? 0) + 1;
+    return acc;
+  }, {});
 
-  return { found, total, matchPct, topGaps, byCategory }
-})
+  return { found, total, matchPct, topGaps, byCategory };
+});
+
+const feedbackOpen = ref(true);
+
+const aiFeedback = computed((): AnalysisFeedback | null => {
+  const raw = store.current?.analysis_feedback;
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+});
 
 async function load(id: string) {
-  isLoading.value = true
-  error.value = false
+  isLoading.value = true;
+  error.value = false;
   try {
-    skills.value = await store.fetchSkills(id)
+    skills.value = await store.fetchSkills(id);
   } catch {
-    error.value = true
+    error.value = true;
   } finally {
-    isLoading.value = false
+    isLoading.value = false;
   }
 }
 
-onMounted(() => load(props.applicationId))
-watch(() => props.applicationId, (id) => load(id))
+onMounted(() => load(props.applicationId));
+watch(
+  () => props.applicationId,
+  (id) => load(id),
+);
 </script>
 
 <template>
@@ -121,13 +136,24 @@ watch(() => props.applicationId, (id) => load(id))
             <td class="col-match">
               <span v-if="skill.match_status === 'found_in_resume'" class="badge-found">
                 <svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true">
-                  <path d="M2 5l2.5 2.5L8 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                  <path
+                    d="M2 5l2.5 2.5L8 3"
+                    stroke="currentColor"
+                    stroke-width="1.5"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
                 </svg>
                 Yes
               </span>
               <span v-else class="badge-missing">
                 <svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true">
-                  <path d="M2.5 2.5l5 5M7.5 2.5l-5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                  <path
+                    d="M2.5 2.5l5 5M7.5 2.5l-5 5"
+                    stroke="currentColor"
+                    stroke-width="1.5"
+                    stroke-linecap="round"
+                  />
                 </svg>
                 No
               </span>
@@ -138,48 +164,116 @@ watch(() => props.applicationId, (id) => load(id))
 
       <!-- Feedback panel -->
       <div v-if="feedback" class="feedback">
-        <h3 class="feedback-heading">What to improve</h3>
+        <button class="feedback-toggle" @click="feedbackOpen = !feedbackOpen">
+          <span class="feedback-heading">What to improve</span>
+          <svg
+            width="12"
+            height="12"
+            viewBox="0 0 12 12"
+            fill="none"
+            aria-hidden="true"
+            :style="{
+              transform: feedbackOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+              transition: 'transform 0.2s ease',
+            }"
+          >
+            <path
+              d="M2 4l4 4 4-4"
+              stroke="currentColor"
+              stroke-width="1.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+        </button>
 
-        <!-- match bar -->
-        <div class="match-bar-row">
-          <span class="match-label">{{ feedback.found }} / {{ feedback.total }} skills matched</span>
-          <span class="match-pct" :class="feedback.matchPct >= 70 ? 'match-pct--good' : feedback.matchPct >= 40 ? 'match-pct--mid' : 'match-pct--low'">
-            {{ feedback.matchPct }}%
-          </span>
-        </div>
-        <div class="match-bar">
-          <div
-            class="match-bar-fill"
-            :class="feedback.matchPct >= 70 ? 'fill--good' : feedback.matchPct >= 40 ? 'fill--mid' : 'fill--low'"
-            :style="{ width: feedback.matchPct + '%' }"
-          />
-        </div>
+        <template v-if="feedbackOpen">
+          <!-- match bar -->
+          <div class="match-bar-row">
+            <span class="match-label"
+              >{{ feedback.found }} / {{ feedback.total }} skills matched</span
+            >
+            <span
+              class="match-pct"
+              :class="
+                feedback.matchPct >= 70
+                  ? 'match-pct--good'
+                  : feedback.matchPct >= 40
+                    ? 'match-pct--mid'
+                    : 'match-pct--low'
+              "
+            >
+              {{ feedback.matchPct }}%
+            </span>
+          </div>
+          <div class="match-bar">
+            <div
+              class="match-bar-fill"
+              :class="
+                feedback.matchPct >= 70
+                  ? 'fill--good'
+                  : feedback.matchPct >= 40
+                    ? 'fill--mid'
+                    : 'fill--low'
+              "
+              :style="{ width: feedback.matchPct + '%' }"
+            />
+          </div>
 
-        <!-- top gaps -->
-        <template v-if="feedback.topGaps.length">
-          <p class="feedback-label">Top gaps to address</p>
-          <ul class="gap-list">
-            <li v-for="s in feedback.topGaps" :key="s.id" class="gap-item">
-              <span class="gap-name">{{ s.skill_name }}</span>
-              <span class="gap-cat">{{ s.category }}</span>
-            </li>
+          <!-- top gaps -->
+          <template v-if="feedback.topGaps.length">
+            <p class="feedback-label">Top gaps to address</p>
+            <ul class="gap-list">
+              <li v-for="s in feedback.topGaps" :key="s.id" class="gap-item">
+                <span class="gap-name">{{ s.skill_name }}</span>
+                <span class="gap-cat">{{ s.category }}</span>
+              </li>
+            </ul>
+          </template>
+
+          <!-- category breakdown -->
+          <template v-if="Object.keys(feedback.byCategory).length">
+            <p class="feedback-label">Missing by category</p>
+            <ul class="category-list">
+              <li v-for="(count, cat) in feedback.byCategory" :key="cat" class="category-item">
+                <span class="category-name">{{ cat }}</span>
+                <span class="category-count">{{ count }}</span>
+              </li>
+            </ul>
+          </template>
+
+          <p v-if="feedback.matchPct === 100" class="feedback-all-good">
+            All required skills are present in your resume.
+          </p>
+        </template>
+      </div>
+
+      <!-- AI recruiter feedback -->
+      <div v-if="aiFeedback" class="ai-feedback">
+        <h2 class="ai-heading">Recruiter Assessment</h2>
+
+        <p class="ai-overall">{{ aiFeedback.overall_assessment }}</p>
+
+        <template v-if="aiFeedback.strong_points.length">
+          <p class="feedback-label">Strong points</p>
+          <ul class="ai-list ai-list--good">
+            <li v-for="(pt, i) in aiFeedback.strong_points" :key="i">{{ pt }}</li>
           </ul>
         </template>
 
-        <!-- category breakdown -->
-        <template v-if="Object.keys(feedback.byCategory).length">
-          <p class="feedback-label">Missing by category</p>
-          <ul class="category-list">
-            <li v-for="(count, cat) in feedback.byCategory" :key="cat" class="category-item">
-              <span class="category-name">{{ cat }}</span>
-              <span class="category-count">{{ count }}</span>
-            </li>
+        <template v-if="aiFeedback.weak_points.length">
+          <p class="feedback-label">Weak points</p>
+          <ul class="ai-list ai-list--bad">
+            <li v-for="(pt, i) in aiFeedback.weak_points" :key="i">{{ pt }}</li>
           </ul>
         </template>
 
-        <p v-if="feedback.matchPct === 100" class="feedback-all-good">
-          All required skills are present in your resume.
-        </p>
+        <template v-if="aiFeedback.recommended_changes.length">
+          <p class="feedback-label">Recommended changes</p>
+          <ul class="ai-list">
+            <li v-for="(pt, i) in aiFeedback.recommended_changes" :key="i">{{ pt }}</li>
+          </ul>
+        </template>
       </div>
     </template>
   </div>
@@ -187,7 +281,7 @@ watch(() => props.applicationId, (id) => load(id))
 
 <!-- inline sub-component for the sort arrow -->
 <script lang="ts">
-import { defineComponent, h } from 'vue'
+import { defineComponent, h } from "vue";
 
 const SortIcon = defineComponent({
   props: {
@@ -195,25 +289,32 @@ const SortIcon = defineComponent({
     dir: Number,
   },
   render() {
-    const up = this.active && this.dir === -1
-    const color = this.active ? 'currentColor' : 'var(--color-border)'
+    const up = this.active && this.dir === -1;
+    const color = this.active ? "currentColor" : "var(--color-border)";
     return h(
-      'svg',
-      { width: 10, height: 10, viewBox: '0 0 10 10', fill: 'none', 'aria-hidden': 'true', style: 'flex-shrink:0' },
+      "svg",
+      {
+        width: 10,
+        height: 10,
+        viewBox: "0 0 10 10",
+        fill: "none",
+        "aria-hidden": "true",
+        style: "flex-shrink:0",
+      },
       [
-        h('path', {
-          d: up ? 'M2 6.5l3-3 3 3' : 'M2 3.5l3 3 3-3',
+        h("path", {
+          d: up ? "M2 6.5l3-3 3 3" : "M2 3.5l3 3 3-3",
           stroke: color,
-          'stroke-width': 1.5,
-          'stroke-linecap': 'round',
-          'stroke-linejoin': 'round',
+          "stroke-width": 1.5,
+          "stroke-linecap": "round",
+          "stroke-linejoin": "round",
         }),
-      ]
-    )
+      ],
+    );
   },
-})
+});
 
-export { SortIcon }
+export { SortIcon };
 </script>
 
 <style lang="scss" scoped>
@@ -222,10 +323,10 @@ export { SortIcon }
 }
 
 .skills-heading {
-  font-size: 13px;
+  margin-bottom: 12px;
+  font-size: 15px;
   font-weight: 600;
   color: var(--color-text);
-  margin-bottom: 12px;
 }
 
 .skills-loading {
@@ -241,8 +342,13 @@ export { SortIcon }
   animation: shimmer 1.4s ease infinite;
 
   @keyframes shimmer {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.4; }
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.4;
+    }
   }
 }
 
@@ -295,12 +401,21 @@ export { SortIcon }
   letter-spacing: 0.06em;
   color: var(--color-text-muted);
 
-  &:hover { color: var(--color-text); }
+  &:hover {
+    color: var(--color-text);
+  }
 }
 
-.col-skill { width: 45%; font-weight: 500; }
-.col-category { width: 35%; }
-.col-match { width: 20%; }
+.col-skill {
+  width: 45%;
+  font-weight: 500;
+}
+.col-category {
+  width: 35%;
+}
+.col-match {
+  width: 20%;
+}
 
 .badge-found,
 .badge-missing {
@@ -311,8 +426,12 @@ export { SortIcon }
   font-weight: 500;
 }
 
-.badge-found { color: var(--color-success); }
-.badge-missing { color: var(--color-text-muted); }
+.badge-found {
+  color: var(--color-success);
+}
+.badge-missing {
+  color: var(--color-text-muted);
+}
 
 // Feedback panel
 .feedback {
@@ -321,6 +440,22 @@ export { SortIcon }
   display: flex;
   flex-direction: column;
   gap: 12px;
+}
+
+.feedback-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  color: var(--color-text);
+
+  &:hover .feedback-heading {
+    color: var(--color-text-muted);
+  }
 }
 
 .feedback-heading {
@@ -345,9 +480,15 @@ export { SortIcon }
   font-size: 13px;
   font-weight: 600;
 
-  &--good { color: var(--color-success); }
-  &--mid  { color: var(--color-warning); }
-  &--low  { color: var(--color-danger); }
+  &--good {
+    color: var(--color-success);
+  }
+  &--mid {
+    color: var(--color-warning);
+  }
+  &--low {
+    color: var(--color-danger);
+  }
 }
 
 .match-bar {
@@ -363,9 +504,15 @@ export { SortIcon }
   border-radius: 99px;
   transition: width 0.4s ease;
 
-  &.fill--good { background: var(--color-success); }
-  &.fill--mid  { background: var(--color-warning); }
-  &.fill--low  { background: var(--color-danger); }
+  &.fill--good {
+    background: var(--color-success);
+  }
+  &.fill--mid {
+    background: var(--color-warning);
+  }
+  &.fill--low {
+    background: var(--color-danger);
+  }
 }
 
 .feedback-label {
@@ -429,5 +576,49 @@ export { SortIcon }
   font-size: 12px;
   color: var(--color-success);
   margin: 0;
+}
+
+.ai-heading {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--color-text);
+  margin: 0;
+}
+
+// AI recruiter feedback
+.ai-feedback {
+  padding-top: 20px;
+  border-top: 1px solid var(--color-border);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.ai-overall {
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--color-text);
+  margin: 0;
+}
+
+.ai-list {
+  margin: 0;
+  padding-left: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+
+  li {
+    font-size: 12px;
+    line-height: 1.5;
+    color: var(--color-text);
+  }
+
+  &--good li {
+    color: var(--color-success);
+  }
+  &--bad li {
+    color: var(--color-danger);
+  }
 }
 </style>

@@ -5,13 +5,14 @@ In dev (DEV_MODE=true) it runs as a FastAPI BackgroundTask.
 """
 
 import asyncio
+import json
 import logging
 import uuid
 from concurrent.futures import ThreadPoolExecutor
 
 from sqlmodel import Session
 
-from backend.agents import jd_agent, resume_agent
+from backend.agents import feedback_agent, jd_agent, resume_agent
 from backend.config import settings
 from backend.database.models import (
     AgentName,
@@ -120,9 +121,24 @@ def run_pipeline(application_id: uuid.UUID) -> None:
             for skill in skills:
                 session.add(skill)
 
+            # feedback agent — runs after both, uses combined output
+            feedback_result = feedback_agent.run(
+                company_name=jd_result["company_name"],
+                job_title=jd_result["job_title"],
+                skills=jd_result["skills"],
+                resume_blocks=resume_result["blocks"],
+            )
+            app.analysis_feedback = json.dumps({
+                "overall_assessment": feedback_result["overall_assessment"],
+                "strong_points": feedback_result["strong_points"],
+                "weak_points": feedback_result["weak_points"],
+                "recommended_changes": feedback_result["recommended_changes"],
+            })
+
             # log usage
             _log_usage(session, app, AgentName.JD, jd_result["usage"])
             _log_usage(session, app, AgentName.RESUME, resume_result["usage"])
+            _log_usage(session, app, AgentName.DIFF, feedback_result["usage"])
 
             _transition(session, app, PipelineStatus.PENDING_APPROVAL)
 

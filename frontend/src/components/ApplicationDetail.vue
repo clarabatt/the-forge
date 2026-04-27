@@ -36,7 +36,7 @@ async function load(id: string) {
   ]);
   if (terminal.has(store.current.status)) return;
 
-  eventSource = store.subscribeToStatus(id, (event: MessageEvent) => {
+  eventSource = store.subscribeToStatus(id, async (event: MessageEvent) => {
     const data = JSON.parse(event.data);
     if (store.current?.id === id) {
       store.current.status = data.status;
@@ -49,7 +49,10 @@ async function load(id: string) {
       if (data.company_name) inList.company_name = data.company_name;
       if (data.job_title) inList.job_title = data.job_title;
     }
-    if (terminal.has(data.status)) closeSSE();
+    if (terminal.has(data.status)) {
+      closeSSE();
+      await store.fetchOne(id);
+    }
   });
 }
 
@@ -224,16 +227,18 @@ onUnmounted(closeSSE);
 }
 
 .content-grid {
-  display: grid;
-  grid-template-columns: 1fr 480px;
-  gap: 32px;
+  display: flex;
+  flex-direction: row;
+  gap: 46px;
   align-items: start;
+  justify-content: start;
 
   @media (max-width: 960px) {
-    grid-template-columns: 1fr;
+    flex-direction: column;
 
     .content-sidebar {
       order: -1;
+      width: 100%;
     }
   }
 }
@@ -244,6 +249,7 @@ onUnmounted(closeSSE);
 
 .content-sidebar {
   min-width: 0;
+  width: 40%;
 }
 
 .detail-empty {
