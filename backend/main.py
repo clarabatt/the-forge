@@ -6,7 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from backend.config import settings
-from backend.routers import auth, applications, resumes, users
+from backend.routers import auth, applications, resumes, users, dev
 
 
 @asynccontextmanager
@@ -28,6 +28,9 @@ app.include_router(auth.router, prefix="/auth", tags=["auth"])
 app.include_router(users.router, prefix="/api/users", tags=["users"])
 app.include_router(applications.router, prefix="/api/applications", tags=["applications"])
 app.include_router(resumes.router, prefix="/api/resumes", tags=["resumes"])
+
+if settings.dev_mode:
+    app.include_router(dev.router, prefix="/api/dev", tags=["dev"])
 
 
 @app.get("/health")

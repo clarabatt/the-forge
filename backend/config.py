@@ -22,6 +22,7 @@ class Settings(BaseSettings):
     burst_limit_window_minutes: int = 10
 
     frontend_url: str = "http://localhost:5173"
+    dev_mode: bool = False
 
 
 settings = Settings()

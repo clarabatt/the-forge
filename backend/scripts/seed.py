@@ -10,7 +10,6 @@ while the frontend is open at http://localhost:5173.
 
 from sqlmodel import Session, select
 
-from backend.auth import create_session_token
 from backend.database.models import (
     Application,
     ApplicationStatus,
@@ -125,13 +124,11 @@ def seed() -> None:
 
         session.commit()
 
-        # ── Session token ─────────────────────────────────────────────────────
-        token = create_session_token(str(user.id))
-
     print("\n✓ Seed complete\n")
-    print("Paste this in the browser console (http://localhost:5173):\n")
-    print(f'  document.cookie = "session={token}; path=/"\n')
-    print("Then refresh the page.\n")
+    print("Log in as the dev user by visiting:\n")
+    print("http://localhost:8000/docs, find POST /api/dev/login, click Try it out → Execute.\n") 
+    print("Or with curl:\n")
+    print("  curl -X POST http://localhost:8000/api/dev/login\n")
 
 
 if __name__ == "__main__":
