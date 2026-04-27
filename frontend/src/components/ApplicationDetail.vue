@@ -10,6 +10,7 @@ import {
 } from "radix-vue";
 import { PipelineStatus, useApplicationsStore } from "@/stores/applications";
 import ResumeViewer from "@/components/ResumeViewer.vue";
+import SkillsTable from "@/components/SkillsTable.vue";
 import { getAppTitle } from "@/utils/application";
 
 const route = useRoute();
@@ -204,7 +205,14 @@ onUnmounted(closeSSE);
             </button>
           </div>
         </div>
-        <ResumeViewer :application-id="store.current.id" />
+        <div class="content-grid">
+          <div class="content-main">
+            <ResumeViewer :application-id="store.current.id" />
+          </div>
+          <aside class="content-sidebar">
+            <SkillsTable :application-id="store.current.id" />
+          </aside>
+        </div>
       </template>
     </template>
   </div>
@@ -213,7 +221,29 @@ onUnmounted(closeSSE);
 <style lang="scss" scoped>
 .application-detail {
   padding: 32px 40px;
-  max-width: 800px;
+}
+
+.content-grid {
+  display: grid;
+  grid-template-columns: 1fr 480px;
+  gap: 32px;
+  align-items: start;
+
+  @media (max-width: 960px) {
+    grid-template-columns: 1fr;
+
+    .content-sidebar {
+      order: -1;
+    }
+  }
+}
+
+.content-main {
+  min-width: 0;
+}
+
+.content-sidebar {
+  min-width: 0;
 }
 
 .detail-empty {

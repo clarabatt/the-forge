@@ -16,7 +16,7 @@ from sqlmodel import Session, delete
 from backend.auth import get_current_user
 from backend.config import settings
 from backend.database.models import Application, ApplicationStatus, PipelineStatus, Resume, Skill, User
-from backend.database.repositories import ApplicationRepository
+from backend.database.repositories import ApplicationRepository, SkillRepository
 from backend.database.session import get_session
 from backend.gcs import download_bytes
 
@@ -158,6 +158,19 @@ def _get_resume_bytes(application_id: uuid.UUID, user_id: uuid.UUID, session: Se
     except FileNotFoundError:
         raise HTTPException(status_code=404, detail="Resume file not found in storage")
     return data, resume.file_name
+
+
+@router.get("/{application_id}/skills")
+def list_skills(
+    application_id: uuid.UUID,
+    session: Session = Depends(get_session),
+    user: User = Depends(get_current_user),
+):
+    repo = ApplicationRepository(session)
+    app = repo.get_by_user_and_id(user.id, application_id)
+    if not app:
+        raise HTTPException(status_code=404, detail="Application not found")
+    return SkillRepository(session).list_by_application(application_id)
 
 
 @router.get("/{application_id}/download/docx")

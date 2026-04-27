@@ -12,6 +12,18 @@ export enum PipelineStatus {
   FAILED = 'FAILED',
 }
 
+export type SkillMatchStatus = 'found_in_resume' | 'missing'
+export type SkillCategory = 'Hard Skill' | 'Soft Skill' | 'Tool' | 'Domain Knowledge'
+
+export interface Skill {
+  id: string
+  skill_name: string
+  category: SkillCategory
+  match_status: SkillMatchStatus
+  ai_confidence: number
+  rank: number
+}
+
 export interface Application {
   id: string
   company_name: string
@@ -63,6 +75,12 @@ export const useApplicationsStore = defineStore('applications', () => {
     return app
   }
 
+  async function fetchSkills(id: string): Promise<Skill[]> {
+    const res = await fetch(`/api/applications/${id}/skills`, { credentials: 'include' })
+    if (!res.ok) throw new Error(`Failed to load skills (${res.status})`)
+    return res.json()
+  }
+
   async function downloadResume(id: string, format: 'docx' | 'pdf'): Promise<void> {
     const res = await fetch(`/api/applications/${id}/download/${format}`, { credentials: 'include' })
     if (!res.ok) throw new Error(`Download failed (${res.status})`)
@@ -108,5 +126,5 @@ export const useApplicationsStore = defineStore('applications', () => {
     return es
   }
 
-  return { applications, current, isLoading, fetchAll, fetchOne, create, patch, retry, downloadResume, fetchResumeHtml, subscribeToStatus }
+  return { applications, current, isLoading, fetchAll, fetchOne, create, patch, retry, downloadResume, fetchSkills, fetchResumeHtml, subscribeToStatus }
 })
