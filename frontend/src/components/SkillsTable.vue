@@ -38,6 +38,26 @@ const sortedSkills = computed(() =>
   })
 )
 
+const feedback = computed(() => {
+  if (!skills.value.length) return null
+
+  const total = skills.value.length
+  const found = skills.value.filter((s) => s.match_status === 'found_in_resume').length
+  const missing = skills.value.filter((s) => s.match_status === 'missing')
+  const matchPct = Math.round((found / total) * 100)
+
+  // top missing skills ordered by rank (lower rank = more critical)
+  const topGaps = [...missing].sort((a, b) => a.rank - b.rank).slice(0, 3)
+
+  // missing count per category
+  const byCategory = missing.reduce<Record<string, number>>((acc, s) => {
+    acc[s.category] = (acc[s.category] ?? 0) + 1
+    return acc
+  }, {})
+
+  return { found, total, matchPct, topGaps, byCategory }
+})
+
 async function load(id: string) {
   isLoading.value = true
   error.value = false
@@ -66,54 +86,102 @@ watch(() => props.applicationId, (id) => load(id))
 
     <div v-else-if="skills.length === 0" class="skills-empty">No skills recorded.</div>
 
-    <table v-else class="skills-table">
-      <thead>
-        <tr>
-          <th class="col-skill">
-            <button class="th-btn" @click="toggleSort('skill_name')">
-              Skill
-              <SortIcon :active="sortKey === 'skill_name'" :dir="sortDir" />
-            </button>
-          </th>
-          <th class="col-category">
-            <button class="th-btn" @click="toggleSort('category')">
-              Category
-              <SortIcon :active="sortKey === 'category'" :dir="sortDir" />
-            </button>
-          </th>
-          <th class="col-match">
-            <button class="th-btn" @click="toggleSort('match_status')">
-              In resume
-              <SortIcon :active="sortKey === 'match_status'" :dir="sortDir" />
-            </button>
-          </th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr
-          v-for="skill in sortedSkills"
-          :key="skill.id"
-          :class="{ 'row--missing': skill.match_status === 'missing' }"
-        >
-          <td class="col-skill">{{ skill.skill_name }}</td>
-          <td class="col-category">{{ skill.category }}</td>
-          <td class="col-match">
-            <span v-if="skill.match_status === 'found_in_resume'" class="badge-found">
-              <svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true">
-                <path d="M2 5l2.5 2.5L8 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
-              Yes
-            </span>
-            <span v-else class="badge-missing">
-              <svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true">
-                <path d="M2.5 2.5l5 5M7.5 2.5l-5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-              </svg>
-              No
-            </span>
-          </td>
-        </tr>
-      </tbody>
-    </table>
+    <template v-else>
+      <table class="skills-table">
+        <thead>
+          <tr>
+            <th class="col-skill">
+              <button class="th-btn" @click="toggleSort('skill_name')">
+                Skill
+                <SortIcon :active="sortKey === 'skill_name'" :dir="sortDir" />
+              </button>
+            </th>
+            <th class="col-category">
+              <button class="th-btn" @click="toggleSort('category')">
+                Category
+                <SortIcon :active="sortKey === 'category'" :dir="sortDir" />
+              </button>
+            </th>
+            <th class="col-match">
+              <button class="th-btn" @click="toggleSort('match_status')">
+                In resume
+                <SortIcon :active="sortKey === 'match_status'" :dir="sortDir" />
+              </button>
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr
+            v-for="skill in sortedSkills"
+            :key="skill.id"
+            :class="{ 'row--missing': skill.match_status === 'missing' }"
+          >
+            <td class="col-skill">{{ skill.skill_name }}</td>
+            <td class="col-category">{{ skill.category }}</td>
+            <td class="col-match">
+              <span v-if="skill.match_status === 'found_in_resume'" class="badge-found">
+                <svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true">
+                  <path d="M2 5l2.5 2.5L8 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                Yes
+              </span>
+              <span v-else class="badge-missing">
+                <svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true">
+                  <path d="M2.5 2.5l5 5M7.5 2.5l-5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                </svg>
+                No
+              </span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- Feedback panel -->
+      <div v-if="feedback" class="feedback">
+        <h3 class="feedback-heading">What to improve</h3>
+
+        <!-- match bar -->
+        <div class="match-bar-row">
+          <span class="match-label">{{ feedback.found }} / {{ feedback.total }} skills matched</span>
+          <span class="match-pct" :class="feedback.matchPct >= 70 ? 'match-pct--good' : feedback.matchPct >= 40 ? 'match-pct--mid' : 'match-pct--low'">
+            {{ feedback.matchPct }}%
+          </span>
+        </div>
+        <div class="match-bar">
+          <div
+            class="match-bar-fill"
+            :class="feedback.matchPct >= 70 ? 'fill--good' : feedback.matchPct >= 40 ? 'fill--mid' : 'fill--low'"
+            :style="{ width: feedback.matchPct + '%' }"
+          />
+        </div>
+
+        <!-- top gaps -->
+        <template v-if="feedback.topGaps.length">
+          <p class="feedback-label">Top gaps to address</p>
+          <ul class="gap-list">
+            <li v-for="s in feedback.topGaps" :key="s.id" class="gap-item">
+              <span class="gap-name">{{ s.skill_name }}</span>
+              <span class="gap-cat">{{ s.category }}</span>
+            </li>
+          </ul>
+        </template>
+
+        <!-- category breakdown -->
+        <template v-if="Object.keys(feedback.byCategory).length">
+          <p class="feedback-label">Missing by category</p>
+          <ul class="category-list">
+            <li v-for="(count, cat) in feedback.byCategory" :key="cat" class="category-item">
+              <span class="category-name">{{ cat }}</span>
+              <span class="category-count">{{ count }}</span>
+            </li>
+          </ul>
+        </template>
+
+        <p v-if="feedback.matchPct === 100" class="feedback-all-good">
+          All required skills are present in your resume.
+        </p>
+      </div>
+    </template>
   </div>
 </template>
 
@@ -187,6 +255,7 @@ export { SortIcon }
   width: 100%;
   border-collapse: collapse;
   font-size: 13px;
+  margin-bottom: 24px;
 
   thead tr {
     border-bottom: 1px solid var(--color-border);
@@ -244,4 +313,121 @@ export { SortIcon }
 
 .badge-found { color: var(--color-success); }
 .badge-missing { color: var(--color-text-muted); }
+
+// Feedback panel
+.feedback {
+  padding-top: 20px;
+  border-top: 1px solid var(--color-border);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.feedback-heading {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text);
+  margin: 0;
+}
+
+.match-bar-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 12px;
+}
+
+.match-label {
+  color: var(--color-text-muted);
+}
+
+.match-pct {
+  font-size: 13px;
+  font-weight: 600;
+
+  &--good { color: var(--color-success); }
+  &--mid  { color: var(--color-warning); }
+  &--low  { color: var(--color-danger); }
+}
+
+.match-bar {
+  height: 4px;
+  background: var(--color-border);
+  border-radius: 99px;
+  overflow: hidden;
+  margin-top: -6px;
+}
+
+.match-bar-fill {
+  height: 100%;
+  border-radius: 99px;
+  transition: width 0.4s ease;
+
+  &.fill--good { background: var(--color-success); }
+  &.fill--mid  { background: var(--color-warning); }
+  &.fill--low  { background: var(--color-danger); }
+}
+
+.feedback-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-text-muted);
+  margin: 0;
+}
+
+.gap-list,
+.category-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.gap-item {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.gap-name {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--color-text);
+}
+
+.gap-cat {
+  font-size: 11px;
+  color: var(--color-text-muted);
+}
+
+.category-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+}
+
+.category-name {
+  color: var(--color-text);
+}
+
+.category-count {
+  font-weight: 600;
+  color: var(--color-text-muted);
+  background: var(--color-bg-subtle);
+  border: 1px solid var(--color-border);
+  border-radius: 99px;
+  padding: 0px 7px;
+  font-size: 11px;
+}
+
+.feedback-all-good {
+  font-size: 12px;
+  color: var(--color-success);
+  margin: 0;
+}
 </style>
