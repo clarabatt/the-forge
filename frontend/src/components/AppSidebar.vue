@@ -14,6 +14,9 @@ import {
 import { useApplicationsStore, type PipelineStatus } from "@/stores/applications";
 import { useResumesStore } from "@/stores/resumes";
 import { useAuthStore } from "@/stores/auth";
+import { getAppTitle } from "@/utils/application";
+
+const emit = defineEmits<{ "new-application": [] }>();
 
 const route = useRoute();
 const router = useRouter();
@@ -24,6 +27,8 @@ const authStore = useAuthStore();
 const collapsed = ref(false);
 
 const activeId = computed(() => route.params.id as string | undefined);
+
+const hasNoBaseResumes = computed(() => !resumesStore.baseResumes?.length);
 
 const selectedResumeId = computed({
   get: () => resumesStore.selectedResumeId ?? "",
@@ -120,6 +125,7 @@ const statusColor: Record<PipelineStatus, string> = {
       <button
         class="sidebar-toggle"
         :aria-label="collapsed ? 'Expand sidebar' : 'Collapse sidebar'"
+        :title="collapsed ? 'Expand sidebar' : 'Collapse sidebar'"
         @click="collapsed = !collapsed"
       >
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
@@ -159,9 +165,7 @@ const statusColor: Record<PipelineStatus, string> = {
                   >
                     <SelectItemText>{{ resume.file_name }}</SelectItemText>
                   </SelectItem>
-                  <div v-if="resumesStore.baseResumes.length === 0" class="select-empty">
-                    No resumes found
-                  </div>
+                  <div v-if="hasNoBaseResumes" class="select-empty">No resumes found</div>
                 </SelectViewport>
               </SelectContent>
             </SelectPortal>
@@ -174,14 +178,31 @@ const statusColor: Record<PipelineStatus, string> = {
             class="file-input-hidden"
             @change="onFileSelected"
           />
-          <button class="upload-link" :disabled="isUploading" @click="triggerUpload">
+          <button
+            class="upload-link"
+            :disabled="isUploading"
+            :title="isUploading ? 'Uploading resume...' : 'Upload new resume'"
+            @click="triggerUpload"
+          >
             {{ isUploading ? "Uploading…" : "+ Upload new resume" }}
           </button>
           <p v-if="uploadError" class="upload-error">{{ uploadError }}</p>
         </div>
 
         <div class="sidebar-section">
-          <button class="btn-new-app">+ New Application</button>
+          <button
+            class="btn-new-app"
+            :disabled="hasNoBaseResumes"
+            :aria-label="
+              hasNoBaseResumes ? 'Upload a resume to create an application' : 'New application'
+            "
+            :title="
+              hasNoBaseResumes ? 'Upload a resume to create an application' : 'New application'
+            "
+            @click="emit('new-application')"
+          >
+            + New Application
+          </button>
         </div>
 
         <div class="sidebar-section sidebar-section--apps">
@@ -203,7 +224,7 @@ const statusColor: Record<PipelineStatus, string> = {
                 :style="{ background: statusColor[app.status] ?? 'var(--color-text-muted)' }"
               />
               <span class="app-label">
-                <span class="app-company">{{ app.company_name }}</span>
+                <span class="app-company">{{ getAppTitle(app) }}</span>
                 <span class="app-role">{{ app.job_title }}</span>
               </span>
             </li>
@@ -218,7 +239,7 @@ const statusColor: Record<PipelineStatus, string> = {
             :key="app.id"
             class="app-item app-item--icon"
             :class="{ 'app-item--active': app.id === activeId }"
-            :title="`${app.company_name}: ${app.job_title}`"
+            :title="`${getAppTitle(app)}: ${app.job_title}`"
             @click="selectApp(app.id)"
           >
             <span
@@ -429,8 +450,14 @@ const statusColor: Record<PipelineStatus, string> = {
   cursor: pointer;
   text-align: left;
 
-  &:hover {
+  &:hover:not(:disabled) {
     background: var(--color-primary-hover);
+  }
+
+  &:disabled {
+    background: var(--color-text-muted);
+    cursor: not-allowed;
+    opacity: 0.6;
   }
 }
 

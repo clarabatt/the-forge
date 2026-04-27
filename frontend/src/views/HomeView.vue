@@ -1,15 +1,18 @@
 <script setup lang="ts">
-import { onMounted } from "vue";
+import { onMounted, ref } from "vue";
 import { useRoute } from "vue-router";
 import { useApplicationsStore } from "@/stores/applications";
 import { useResumesStore } from "@/stores/resumes";
 import { useAuthStore } from "@/stores/auth";
 import AppSidebar from "@/components/AppSidebar.vue";
+import NewApplicationModal from "@/components/NewApplicationModal.vue";
 
 const route = useRoute();
 const appsStore = useApplicationsStore();
 const resumesStore = useResumesStore();
 const authStore = useAuthStore();
+
+const showModal = ref(false);
 
 onMounted(() => {
   appsStore.fetchAll();
@@ -20,7 +23,7 @@ onMounted(() => {
 
 <template>
   <div class="workspace">
-    <AppSidebar />
+    <AppSidebar @new-application="showModal = true" />
     <main class="detail-area">
       <div v-if="!route.params.id" class="detail-placeholder">
         <p>Select an application from the sidebar to view its details.</p>
@@ -28,7 +31,12 @@ onMounted(() => {
       <RouterView v-else key="detail" />
     </main>
   </div>
-  <button class="fab" aria-label="New application">+</button>
+
+  <button class="fab" v-if="resumesStore.baseResumes?.length > 0" @click="showModal = true">
+    +
+  </button>
+
+  <NewApplicationModal v-if="showModal" @close="showModal = false" />
 </template>
 
 <style lang="scss" scoped>

@@ -1,18 +1,49 @@
 <script setup lang="ts">
-import { onMounted, watch } from 'vue'
+import { onMounted, onUnmounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useApplicationsStore } from '@/stores/applications'
 import ResumeViewer from '@/components/ResumeViewer.vue'
+import { getAppTitle } from '@/utils/application'
 
 const route = useRoute()
 const store = useApplicationsStore()
 
-async function load() {
-  await store.fetchOne(route.params.id as string)
+let eventSource: EventSource | null = null
+
+function closeSSE() {
+  eventSource?.close()
+  eventSource = null
 }
 
-onMounted(load)
-watch(() => route.params.id, load)
+async function load(id: string) {
+  closeSSE()
+  await store.fetchOne(id)
+
+  if (!store.current) return
+
+  const terminal = new Set(['READY', 'FAILED', 'PENDING_APPROVAL'])
+  if (terminal.has(store.current.status)) return
+
+  eventSource = store.subscribeToStatus(id, (event: MessageEvent) => {
+    const data = JSON.parse(event.data)
+    if (store.current?.id === id) {
+      store.current.status = data.status
+      if (data.company_name) store.current.company_name = data.company_name
+      if (data.job_title) store.current.job_title = data.job_title
+    }
+    const inList = store.applications.find((a) => a.id === id)
+    if (inList) {
+      inList.status = data.status
+      if (data.company_name) inList.company_name = data.company_name
+      if (data.job_title) inList.job_title = data.job_title
+    }
+    if (terminal.has(data.status)) closeSSE()
+  })
+}
+
+onMounted(() => load(route.params.id as string))
+watch(() => route.params.id, (id) => id && load(id as string))
+onUnmounted(closeSSE)
 </script>
 
 <template>
@@ -21,7 +52,7 @@ watch(() => route.params.id, load)
     <template v-else>
       <header class="detail-header">
         <div class="detail-title">
-          <h1>{{ store.current.company_name }}</h1>
+          <h1>{{ getAppTitle(store.current) }}</h1>
           <span class="detail-role">{{ store.current.job_title }}</span>
         </div>
         <span class="badge" :class="`badge--${store.current.status.toLowerCase()}`">
@@ -29,11 +60,25 @@ watch(() => route.params.id, load)
         </span>
       </header>
 
-      <div class="detail-actions">
-        <button class="btn-download">Download Resume</button>
+      <!-- pipeline in-progress state -->
+      <div
+        v-if="['UPLOADED', 'ANALYZING'].includes(store.current.status)"
+        class="pipeline-progress"
+      >
+        <div class="spinner" />
+        <p>{{ store.current.status === 'ANALYZING' ? 'Analyzing job description and résumé…' : 'Starting…' }}</p>
       </div>
 
-      <ResumeViewer />
+      <div v-else-if="store.current.status === 'FAILED'" class="pipeline-error">
+        <p>Pipeline failed. Please try again.</p>
+      </div>
+
+      <template v-else>
+        <div class="detail-actions">
+          <button class="btn-download">Download Resume</button>
+        </div>
+        <ResumeViewer />
+      </template>
     </template>
   </div>
 </template>
@@ -46,7 +91,6 @@ watch(() => route.params.id, load)
 
 .detail-empty {
   color: var(--color-text-muted);
-  padding: 32px 40px;
 }
 
 .detail-header {
@@ -87,25 +131,39 @@ watch(() => route.params.id, load)
   flex-shrink: 0;
   margin-top: 3px;
 
-  &--ready {
-    color: var(--color-success);
-    border-color: var(--color-success);
-  }
-  &--failed {
-    color: var(--color-danger);
-    border-color: var(--color-danger);
-  }
+  &--ready { color: var(--color-success); border-color: var(--color-success); }
+  &--failed { color: var(--color-danger); border-color: var(--color-danger); }
   &--pending_approval,
-  &--pending_retry {
-    color: var(--color-warning);
-    border-color: var(--color-warning);
-  }
+  &--pending_retry { color: var(--color-warning); border-color: var(--color-warning); }
   &--analyzing,
   &--tailoring,
-  &--validating {
-    color: var(--color-primary);
-    border-color: var(--color-primary);
-  }
+  &--validating,
+  &--uploaded { color: var(--color-primary); border-color: var(--color-primary); }
+}
+
+.pipeline-progress {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 20px 0;
+  color: var(--color-text-muted);
+  font-size: 13px;
+}
+
+.spinner {
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--color-border);
+  border-top-color: var(--color-primary);
+  border-radius: 50%;
+  animation: spin 0.75s linear infinite;
+  flex-shrink: 0;
+}
+
+.pipeline-error {
+  padding: 20px 0;
+  color: var(--color-danger);
+  font-size: 13px;
 }
 
 .detail-actions {
@@ -122,8 +180,10 @@ watch(() => route.params.id, load)
   cursor: pointer;
   color: var(--color-text);
 
-  &:hover {
-    background: var(--color-bg-subtle);
-  }
+  &:hover { background: var(--color-bg-subtle); }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 </style>

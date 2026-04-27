@@ -86,10 +86,20 @@ def test_get_application_returns_404_for_other_users_application(
     assert resp.status_code == 404
 
 
-def test_stream_application_returns_sse_response(client: TestClient, ApplicationFactory):
-    app = ApplicationFactory()
+def test_stream_application_returns_sse_response(
+    client: TestClient, UserFactory, ApplicationFactory, session_cookie
+):
+    from backend.database.models import PipelineStatus
 
-    resp = client.get(f"/api/applications/{app.id}/stream")
+    user = UserFactory()
+    # terminal status so the generator emits once and closes immediately
+    app = ApplicationFactory(user_id=user.id, status=PipelineStatus.READY)
+
+    resp = client.get(
+        f"/api/applications/{app.id}/stream",
+        cookies={"session": session_cookie(str(user.id))},
+    )
 
     assert resp.status_code == 200
     assert "text/event-stream" in resp.headers["content-type"]
+    assert "status_changed" in resp.text
