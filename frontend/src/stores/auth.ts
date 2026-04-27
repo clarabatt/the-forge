@@ -8,8 +8,14 @@ interface User {
   picture_url: string | null
 }
 
+interface Usage {
+  cost_usd: number
+  monthly_cap_usd: number
+}
+
 export const useAuthStore = defineStore('auth', () => {
   const user = ref<User | null>(null)
+  const usage = ref<Usage | null>(null)
   const isLoading = ref(false)
 
   const isAuthenticated = computed(() => user.value !== null)
@@ -29,9 +35,15 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  function logout() {
-    user.value = null
+  async function fetchUsage() {
+    const res = await fetch('/api/users/me/usage', { credentials: 'include' })
+    if (res.ok) usage.value = await res.json()
   }
 
-  return { user, isLoading, isAuthenticated, fetchMe, logout }
+  function logout() {
+    user.value = null
+    usage.value = null
+  }
+
+  return { user, usage, isLoading, isAuthenticated, fetchMe, fetchUsage, logout }
 })

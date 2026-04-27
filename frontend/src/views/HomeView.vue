@@ -3,15 +3,18 @@ import { onMounted } from "vue";
 import { useRoute } from "vue-router";
 import { useApplicationsStore } from "@/stores/applications";
 import { useResumesStore } from "@/stores/resumes";
+import { useAuthStore } from "@/stores/auth";
 import AppSidebar from "@/components/AppSidebar.vue";
 
 const route = useRoute();
 const appsStore = useApplicationsStore();
 const resumesStore = useResumesStore();
+const authStore = useAuthStore();
 
 onMounted(() => {
   appsStore.fetchAll();
   resumesStore.fetchAll();
+  authStore.fetchUsage();
 });
 </script>
 
