@@ -40,7 +40,8 @@ export const useAuthStore = defineStore('auth', () => {
     if (res.ok) usage.value = await res.json()
   }
 
-  function logout() {
+  async function logout() {
+    await fetch("/auth/logout", { method: "POST", credentials: "include" }).catch(() => {})
     user.value = null
     usage.value = null
   }

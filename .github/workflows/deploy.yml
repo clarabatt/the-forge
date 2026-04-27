@@ -33,6 +33,7 @@ jobs:
           gcloud run deploy ${{ secrets.SERVICE_NAME }} \
             --image=${{ secrets.IMAGE }} \
             --region=${{ secrets.GCP_REGION }} \
+            --update-env-vars="GCS_BUCKET=${{ secrets.GCS_BUCKET }}" \
             --quiet
 
       - name: Run migrations
