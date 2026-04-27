@@ -6,20 +6,20 @@ const router = createRouter({
   routes: [
     {
       path: '/',
-      name: 'home',
       component: () => import('@/views/HomeView.vue'),
       meta: { requiresAuth: true },
+      children: [
+        {
+          path: 'applications/:id',
+          name: 'application',
+          component: () => import('@/components/ApplicationDetail.vue'),
+        },
+      ],
     },
     {
       path: '/login',
       name: 'login',
       component: () => import('@/views/LoginView.vue'),
-    },
-    {
-      path: '/applications/:id',
-      name: 'application',
-      component: () => import('@/views/ApplicationView.vue'),
-      meta: { requiresAuth: true },
     },
   ],
 })
