@@ -11,7 +11,7 @@ import {
   SelectValue,
   SelectViewport,
 } from "radix-vue";
-import { useApplicationsStore, type PipelineStatus } from "@/stores/applications";
+import { PipelineStatus, useApplicationsStore } from "@/stores/applications";
 import { useResumesStore } from "@/stores/resumes";
 import { useAuthStore } from "@/stores/auth";
 import { getAppTitle } from "@/utils/application";
@@ -106,14 +106,14 @@ async function onFileSelected(event: Event) {
 }
 
 const statusColor: Record<PipelineStatus, string> = {
-  READY: "var(--color-success)",
-  PENDING_APPROVAL: "var(--color-warning)",
-  ANALYZING: "var(--color-primary)",
-  TAILORING: "var(--color-primary)",
-  VALIDATING: "var(--color-primary)",
-  PENDING_RETRY: "var(--color-warning)",
-  UPLOADED: "var(--color-text-muted)",
-  FAILED: "var(--color-danger)",
+  [PipelineStatus.READY]: "var(--color-success)",
+  [PipelineStatus.PENDING_APPROVAL]: "var(--color-warning)",
+  [PipelineStatus.ANALYZING]: "var(--color-primary)",
+  [PipelineStatus.TAILORING]: "var(--color-primary)",
+  [PipelineStatus.VALIDATING]: "var(--color-primary)",
+  [PipelineStatus.PENDING_RETRY]: "var(--color-warning)",
+  [PipelineStatus.UPLOADED]: "var(--color-text-muted)",
+  [PipelineStatus.FAILED]: "var(--color-danger)",
 };
 </script>
 

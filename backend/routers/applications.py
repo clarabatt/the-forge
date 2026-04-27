@@ -8,11 +8,11 @@ from typing import AsyncGenerator
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
-from sqlmodel import Session
+from sqlmodel import Session, delete
 
 from backend.auth import get_current_user
 from backend.config import settings
-from backend.database.models import Application, ApplicationStatus, PipelineStatus, User
+from backend.database.models import Application, ApplicationStatus, PipelineStatus, Skill, User
 from backend.database.repositories import ApplicationRepository
 from backend.database.session import get_session
 
@@ -75,6 +75,33 @@ def get_application(
     app = repo.get_by_user_and_id(user.id, application_id)
     if not app:
         raise HTTPException(status_code=404, detail="Application not found")
+    return app
+
+
+@router.post("/{application_id}/retry", status_code=200)
+def retry_application(
+    application_id: uuid.UUID,
+    background_tasks: BackgroundTasks,
+    session: Session = Depends(get_session),
+    user: User = Depends(get_current_user),
+):
+    repo = ApplicationRepository(session)
+    app = repo.get_by_user_and_id(user.id, application_id)
+    if not app:
+        raise HTTPException(status_code=404, detail="Application not found")
+    if app.status != PipelineStatus.FAILED:
+        raise HTTPException(status_code=409, detail="Only failed applications can be retried")
+
+    session.exec(delete(Skill).where(Skill.application_id == application_id))
+    app.status = PipelineStatus.UPLOADED
+    app.company_name = "Analyzing…"
+    app.job_title = "Analyzing…"
+    app.error_message = None
+    session.add(app)
+    session.commit()
+    session.refresh(app)
+
+    background_tasks.add_task(_run_pipeline, app.id)
     return app
 
 

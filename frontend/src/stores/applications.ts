@@ -1,15 +1,16 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 
-export type PipelineStatus =
-  | 'UPLOADED'
-  | 'ANALYZING'
-  | 'PENDING_APPROVAL'
-  | 'TAILORING'
-  | 'VALIDATING'
-  | 'PENDING_RETRY'
-  | 'READY'
-  | 'FAILED'
+export enum PipelineStatus {
+  UPLOADED = 'UPLOADED',
+  ANALYZING = 'ANALYZING',
+  PENDING_APPROVAL = 'PENDING_APPROVAL',
+  TAILORING = 'TAILORING',
+  VALIDATING = 'VALIDATING',
+  PENDING_RETRY = 'PENDING_RETRY',
+  READY = 'READY',
+  FAILED = 'FAILED',
+}
 
 export interface Application {
   id: string
@@ -62,11 +63,26 @@ export const useApplicationsStore = defineStore('applications', () => {
     return app
   }
 
+  async function retry(id: string): Promise<void> {
+    const res = await fetch(`/api/applications/${id}/retry`, {
+      method: 'POST',
+      credentials: 'include',
+    })
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}))
+      throw new Error(body.detail ?? 'Retry failed')
+    }
+    const app: Application = await res.json()
+    if (current.value?.id === id) Object.assign(current.value, app)
+    const inList = applications.value.find((a) => a.id === id)
+    if (inList) Object.assign(inList, app)
+  }
+
   function subscribeToStatus(id: string, onUpdate: (event: MessageEvent) => void): EventSource {
     const es = new EventSource(`/api/applications/${id}/stream`)
     es.addEventListener('status_changed', onUpdate)
     return es
   }
 
-  return { applications, current, isLoading, fetchAll, fetchOne, create, patch, subscribeToStatus }
+  return { applications, current, isLoading, fetchAll, fetchOne, create, patch, retry, subscribeToStatus }
 })
