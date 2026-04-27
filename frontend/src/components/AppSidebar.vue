@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import { computed, ref, useTemplateRef } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import {
   SelectContent,
@@ -38,7 +38,7 @@ const initials = computed(() => {
     .split(" ")
     .filter(Boolean)
     .slice(0, 2)
-    .map((w) => w[0].toUpperCase())
+    .map((w) => w[0]!.toUpperCase())
     .join("");
 });
 
@@ -54,6 +54,50 @@ const costDisplay = computed(() => {
 
 function selectApp(id: string) {
   router.push({ name: "application", params: { id } });
+}
+
+const fileInput = useTemplateRef<HTMLInputElement>("fileInput");
+const isUploading = ref(false);
+const uploadError = ref<string | null>(null);
+
+function triggerUpload() {
+  uploadError.value = null;
+  fileInput.value?.click();
+}
+
+async function onFileSelected(event: Event) {
+  const file = (event.target as HTMLInputElement).files?.[0];
+  if (!file) return;
+
+  isUploading.value = true;
+  uploadError.value = null;
+
+  const form = new FormData();
+  form.append("file", file);
+
+  try {
+    const res = await fetch("/api/resumes/", {
+      method: "POST",
+      credentials: "include",
+      body: form,
+    });
+
+    const body = await res.json().catch(() => ({}));
+
+    if (!res.ok) {
+      uploadError.value = body.detail ?? "Upload failed";
+      return;
+    }
+
+    await resumesStore.fetchAll();
+    if (body?.id) resumesStore.selectedResumeId = body.id;
+  } catch {
+    uploadError.value = "Network error — try again";
+  } finally {
+    isUploading.value = false;
+    // reset so the same file can be re-selected if needed
+    if (fileInput.value) fileInput.value.value = "";
+  }
 }
 
 const statusColor: Record<PipelineStatus, string> = {
@@ -122,6 +166,18 @@ const statusColor: Record<PipelineStatus, string> = {
               </SelectContent>
             </SelectPortal>
           </SelectRoot>
+
+          <input
+            ref="fileInput"
+            type="file"
+            accept=".docx"
+            class="file-input-hidden"
+            @change="onFileSelected"
+          />
+          <button class="upload-link" :disabled="isUploading" @click="triggerUpload">
+            {{ isUploading ? "Uploading…" : "+ Upload new resume" }}
+          </button>
+          <p v-if="uploadError" class="upload-error">{{ uploadError }}</p>
         </div>
 
         <div class="sidebar-section">
@@ -327,6 +383,37 @@ const statusColor: Record<PipelineStatus, string> = {
   padding: 8px 10px;
   font-size: 13px;
   color: var(--color-text-muted);
+}
+
+// Upload
+.file-input-hidden {
+  display: none;
+}
+
+.upload-link {
+  margin-top: 6px;
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 12px;
+  color: var(--color-primary);
+  cursor: pointer;
+  text-align: left;
+
+  &:hover:not(:disabled) {
+    text-decoration: underline;
+  }
+
+  &:disabled {
+    color: var(--color-text-muted);
+    cursor: default;
+  }
+}
+
+.upload-error {
+  margin-top: 4px;
+  font-size: 11px;
+  color: var(--color-danger);
 }
 
 // New app button
