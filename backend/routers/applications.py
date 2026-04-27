@@ -1,10 +1,12 @@
 import asyncio
+import io
 import json
 import uuid
 from datetime import datetime
 from datetime import timezone
 from typing import AsyncGenerator
 
+import mammoth
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
@@ -12,9 +14,10 @@ from sqlmodel import Session, delete
 
 from backend.auth import get_current_user
 from backend.config import settings
-from backend.database.models import Application, ApplicationStatus, PipelineStatus, Skill, User
+from backend.database.models import Application, ApplicationStatus, PipelineStatus, Resume, Skill, User
 from backend.database.repositories import ApplicationRepository
 from backend.database.session import get_session
+from backend.gcs import download_bytes
 
 router = APIRouter()
 
@@ -103,6 +106,32 @@ def retry_application(
 
     background_tasks.add_task(_run_pipeline, app.id)
     return app
+
+
+@router.get("/{application_id}/resume-html")
+def get_resume_html(
+    application_id: uuid.UUID,
+    session: Session = Depends(get_session),
+    user: User = Depends(get_current_user),
+):
+    repo = ApplicationRepository(session)
+    app = repo.get_by_user_and_id(user.id, application_id)
+    if not app:
+        raise HTTPException(status_code=404, detail="Application not found")
+    if not app.base_resume_id:
+        raise HTTPException(status_code=404, detail="No resume attached to this application")
+
+    resume = session.get(Resume, app.base_resume_id)
+    if not resume:
+        raise HTTPException(status_code=404, detail="Resume not found")
+
+    try:
+        data = download_bytes(resume.bucket_key)
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail="Resume file not found in storage")
+
+    result = mammoth.convert_to_html(io.BytesIO(data))
+    return {"html": result.value}
 
 
 @router.get("/{application_id}/stream")

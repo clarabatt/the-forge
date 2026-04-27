@@ -153,7 +153,7 @@ onUnmounted(closeSSE);
         <div class="detail-actions">
           <button class="btn-download">Download Resume</button>
         </div>
-        <ResumeViewer />
+        <ResumeViewer :application-id="store.current.id" />
       </template>
     </template>
   </div>

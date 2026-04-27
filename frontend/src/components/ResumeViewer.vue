@@ -1,25 +1,51 @@
+<script setup lang="ts">
+import { onMounted, ref, watch } from 'vue'
+import { useApplicationsStore } from '@/stores/applications'
+
+const props = defineProps<{ applicationId: string }>()
+
+const store = useApplicationsStore()
+const html = ref('')
+const isLoading = ref(false)
+const error = ref(false)
+
+async function load(id: string) {
+  isLoading.value = true
+  html.value = ''
+  error.value = false
+  try {
+    const result = await store.fetchResumeHtml(id)
+    if (!result) {
+      error.value = true
+    } else {
+      html.value = result
+    }
+  } catch {
+    error.value = true
+  } finally {
+    isLoading.value = false
+  }
+}
+
+onMounted(() => load(props.applicationId))
+watch(() => props.applicationId, (id) => load(id))
+</script>
+
 <template>
   <div class="resume-paper">
-    <div class="resume-placeholder">
-      <div class="resume-line resume-line--name" />
-      <div class="resume-line resume-line--contact" />
-      <div class="resume-spacer" />
-      <div class="resume-line resume-line--section" />
-      <div class="resume-line" />
-      <div class="resume-line resume-line--short" />
-      <div class="resume-line" />
-      <div class="resume-line resume-line--medium" />
-      <div class="resume-spacer" />
-      <div class="resume-line resume-line--section" />
-      <div class="resume-line" />
-      <div class="resume-line resume-line--short" />
-      <div class="resume-line" />
-      <div class="resume-line resume-line--medium" />
-      <div class="resume-line resume-line--short" />
-      <div class="resume-spacer" />
-      <div class="resume-line resume-line--section" />
-      <div class="resume-line resume-line--medium" />
+    <div v-if="isLoading" class="resume-loading">
+      <div class="resume-loading-line" style="width: 40%" />
+      <div class="resume-loading-line" style="width: 26%" />
+      <div class="resume-loading-spacer" />
+      <div class="resume-loading-line" style="width: 22%" />
+      <div class="resume-loading-line" />
+      <div class="resume-loading-line" style="width: 55%" />
+      <div class="resume-loading-line" />
+      <div class="resume-loading-line" style="width: 70%" />
     </div>
+    <div v-else-if="error" class="resume-error">Could not load resume.</div>
+    <!-- eslint-disable-next-line vue/no-v-html -->
+    <div v-else class="resume-body" v-html="html" />
   </div>
 </template>
 
@@ -31,49 +57,119 @@
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
   padding: 48px 56px;
   min-height: 640px;
+  color: #111;
+  font-family: 'Georgia', 'Times New Roman', serif;
 }
 
-.resume-placeholder {
+// skeleton loader
+.resume-loading {
   display: flex;
   flex-direction: column;
   gap: 10px;
 }
 
-.resume-line {
+.resume-loading-line {
   height: 10px;
+  width: 100%;
   background: var(--color-border);
   border-radius: 4px;
-  width: 100%;
-
-  &--name {
-    height: 20px;
-    width: 44%;
-    background: #d1d5db;
-  }
-
-  &--contact {
-    width: 32%;
-    background: #d1d5db;
-    opacity: 0.7;
-  }
-
-  &--section {
-    height: 13px;
-    width: 28%;
-    background: #d1d5db;
-    opacity: 0.6;
-  }
-
-  &--short {
-    width: 42%;
-  }
-
-  &--medium {
-    width: 68%;
-  }
+  animation: shimmer 1.4s ease infinite;
 }
 
-.resume-spacer {
-  height: 14px;
+.resume-loading-spacer {
+  height: 16px;
+}
+
+@keyframes shimmer {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+.resume-error {
+  color: var(--color-text-muted);
+  font-size: 13px;
+  font-family: inherit;
+}
+
+// mammoth HTML output styles
+.resume-body {
+  :deep(p) {
+    margin: 0 0 4px;
+    font-size: 11pt;
+    line-height: 1.5;
+  }
+
+  // name — first bold paragraph
+  :deep(p:first-child strong) {
+    font-size: 20pt;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+  }
+
+  // title — second paragraph
+  :deep(p:nth-child(2) strong) {
+    font-size: 12pt;
+    font-weight: 400;
+    color: #444;
+  }
+
+  // contact line
+  :deep(p:nth-child(3)) {
+    font-size: 10pt;
+    color: #555;
+    margin-bottom: 18px;
+  }
+
+  // section headings (ALL-CAPS bold paragraphs like SUMMARY, SKILLS, WORK EXPERIENCE)
+  :deep(p > strong:only-child) {
+    display: block;
+    font-size: 10pt;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    border-bottom: 1.5px solid #111;
+    padding-bottom: 2px;
+    margin-top: 16px;
+    margin-bottom: 6px;
+  }
+
+  // job title + location line (bold p with mixed content)
+  :deep(p strong) {
+    font-weight: 600;
+  }
+
+  // company name + date range (mammoth maps to h3)
+  :deep(h3) {
+    font-size: 10pt;
+    font-weight: 400;
+    font-style: italic;
+    color: #555;
+    margin: 0 0 4px;
+  }
+
+  // some job titles mapped to h1 by Word styles
+  :deep(h1) {
+    font-size: 11pt;
+    font-weight: 600;
+    margin: 12px 0 0;
+  }
+
+  // skills paragraph (mapped to h2 by Word styles)
+  :deep(h2) {
+    font-size: 10.5pt;
+    font-weight: 400;
+    margin: 0 0 8px;
+  }
+
+  :deep(ul) {
+    margin: 4px 0 10px 0;
+    padding-left: 18px;
+  }
+
+  :deep(li) {
+    font-size: 10.5pt;
+    line-height: 1.55;
+    margin-bottom: 3px;
+  }
 }
 </style>

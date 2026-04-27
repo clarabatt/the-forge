@@ -27,3 +27,14 @@ def upload_bytes(key: str, data: bytes, content_type: str) -> str:
     if settings.dev_mode:
         return _upload_local(key, data)
     return _upload_gcs(key, data, content_type)
+
+
+def download_bytes(key: str) -> bytes:
+    """Download bytes from GCS (prod) or local disk (dev_mode)."""
+    if settings.dev_mode:
+        return (_LOCAL_UPLOAD_DIR / key).read_bytes()
+    from google.cloud import storage  # deferred so dev mode never imports it
+
+    client = storage.Client()
+    blob = client.bucket(settings.gcs_bucket).blob(key)
+    return blob.download_as_bytes()

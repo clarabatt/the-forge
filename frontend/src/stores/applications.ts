@@ -63,6 +63,13 @@ export const useApplicationsStore = defineStore('applications', () => {
     return app
   }
 
+  async function fetchResumeHtml(id: string): Promise<string> {
+    const res = await fetch(`/api/applications/${id}/resume-html`, { credentials: 'include' })
+    if (!res.ok) throw new Error(`Failed to load resume (${res.status})`)
+    const body = await res.json()
+    return body.html ?? ''
+  }
+
   async function retry(id: string): Promise<void> {
     const res = await fetch(`/api/applications/${id}/retry`, {
       method: 'POST',
@@ -84,5 +91,5 @@ export const useApplicationsStore = defineStore('applications', () => {
     return es
   }
 
-  return { applications, current, isLoading, fetchAll, fetchOne, create, patch, retry, subscribeToStatus }
+  return { applications, current, isLoading, fetchAll, fetchOne, create, patch, retry, fetchResumeHtml, subscribeToStatus }
 })
