@@ -142,6 +142,20 @@ def retry_application(
     return app
 
 
+@router.delete("/{application_id}", status_code=204)
+def delete_application(
+    application_id: uuid.UUID,
+    session: Session = Depends(get_session),
+    user: User = Depends(get_current_user),
+):
+    repo = ApplicationRepository(session)
+    app = repo.get_by_user_and_id(user.id, application_id)
+    if not app:
+        raise HTTPException(status_code=404, detail="Application not found")
+    session.exec(delete(Skill).where(Skill.application_id == application_id))
+    repo.delete(app)
+
+
 def _get_resume_bytes(application_id: uuid.UUID, user_id: uuid.UUID, session: Session) -> tuple[bytes, str]:
     """Shared helper: fetch app + resume, return (bytes, file_name). Raises HTTPException on errors."""
     repo = ApplicationRepository(session)

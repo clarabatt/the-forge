@@ -83,6 +83,19 @@ export const useApplicationsStore = defineStore('applications', () => {
     return app
   }
 
+  async function deleteApplication(id: string): Promise<void> {
+    const res = await fetch(`/api/applications/${id}`, {
+      method: 'DELETE',
+      credentials: 'include',
+    })
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}))
+      throw new Error(body.detail ?? 'Delete failed')
+    }
+    applications.value = applications.value.filter((a) => a.id !== id)
+    if (current.value?.id === id) current.value = null
+  }
+
   async function fetchSkills(id: string): Promise<Skill[]> {
     const res = await fetch(`/api/applications/${id}/skills`, { credentials: 'include' })
     if (!res.ok) throw new Error(`Failed to load skills (${res.status})`)
@@ -134,5 +147,5 @@ export const useApplicationsStore = defineStore('applications', () => {
     return es
   }
 
-  return { applications, current, isLoading, fetchAll, fetchOne, create, patch, retry, downloadResume, fetchSkills, fetchResumeHtml, subscribeToStatus }
+  return { applications, current, isLoading, fetchAll, fetchOne, create, patch, retry, deleteApplication, downloadResume, fetchSkills, fetchResumeHtml, subscribeToStatus }
 })

@@ -1,11 +1,18 @@
 <script setup lang="ts">
 import { onMounted, onUnmounted, ref, watch } from "vue";
-import { useRoute } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 import {
+  DialogClose,
+  DialogContent,
+  DialogOverlay,
+  DialogPortal,
+  DialogRoot,
+  DialogTitle,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuPortal,
   DropdownMenuRoot,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "radix-vue";
 import { PipelineStatus, useApplicationsStore } from "@/stores/applications";
@@ -14,6 +21,7 @@ import SkillsTable from "@/components/SkillsTable.vue";
 import { getAppTitle } from "@/utils/application";
 
 const route = useRoute();
+const router = useRouter();
 const store = useApplicationsStore();
 
 let eventSource: EventSource | null = null;
@@ -57,7 +65,9 @@ async function load(id: string) {
 }
 
 const isRetrying = ref(false);
+const isDeleting = ref(false);
 const isDownloading = ref(false);
+const showDeleteConfirm = ref(false);
 
 async function download(format: "docx" | "pdf") {
   const id = route.params.id as string;
@@ -77,6 +87,23 @@ async function retry() {
     await load(id);
   } finally {
     isRetrying.value = false;
+  }
+}
+
+async function deleteApp() {
+  const id = route.params.id as string;
+  const next = store.applications.find((a) => a.id !== id);
+  isDeleting.value = true;
+  showDeleteConfirm.value = false;
+  try {
+    await store.deleteApplication(id);
+    if (next) {
+      await router.push({ name: 'application', params: { id: next.id } });
+    } else {
+      await router.push('/');
+    }
+  } finally {
+    isDeleting.value = false;
   }
 }
 
@@ -138,6 +165,17 @@ onUnmounted(closeSSE);
                     />
                   </svg>
                   Retry
+                </DropdownMenuItem>
+                <DropdownMenuSeparator class="menu-separator" />
+                <DropdownMenuItem
+                  class="menu-item menu-item--danger"
+                  :disabled="isDeleting"
+                  @select="showDeleteConfirm = true"
+                >
+                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+                    <path d="M1.5 3h9M4.5 3V1.5h3V3M5 5.5v3M7 5.5v3M2.5 3l.5 7h6l.5-7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                  </svg>
+                  Delete
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenuPortal>
@@ -219,6 +257,22 @@ onUnmounted(closeSSE);
       </template>
     </template>
   </div>
+
+  <DialogRoot :open="showDeleteConfirm" @update:open="showDeleteConfirm = $event">
+    <DialogPortal>
+      <DialogOverlay class="dialog-overlay" />
+      <DialogContent class="dialog-content">
+        <DialogTitle class="dialog-title">Delete application?</DialogTitle>
+        <p class="dialog-body">This cannot be undone.</p>
+        <div class="dialog-actions">
+          <DialogClose class="btn-cancel">Cancel</DialogClose>
+          <button class="btn-delete" :disabled="isDeleting" @click="deleteApp">
+            {{ isDeleting ? 'Deleting…' : 'Delete' }}
+          </button>
+        </div>
+      </DialogContent>
+    </DialogPortal>
+  </DialogRoot>
 </template>
 
 <style lang="scss" scoped>
@@ -355,6 +409,12 @@ onUnmounted(closeSSE);
   z-index: 50;
 }
 
+.menu-separator {
+  height: 1px;
+  background: var(--color-border);
+  margin: 4px 0;
+}
+
 .menu-item {
   display: flex;
   align-items: center;
@@ -375,6 +435,14 @@ onUnmounted(closeSSE);
     opacity: 0.4;
     cursor: default;
     pointer-events: none;
+  }
+
+  &--danger {
+    color: var(--color-danger);
+
+    &[data-highlighted] {
+      background: color-mix(in srgb, var(--color-danger) 10%, transparent);
+    }
   }
 }
 
@@ -445,6 +513,83 @@ onUnmounted(closeSSE);
 @keyframes spin {
   to {
     transform: rotate(360deg);
+  }
+}
+
+.dialog-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  z-index: 100;
+}
+
+.dialog-content {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 101;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.16);
+  padding: 24px;
+  width: 320px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.dialog-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--color-text);
+  margin: 0;
+}
+
+.dialog-body {
+  font-size: 13px;
+  color: var(--color-text-muted);
+  margin: 0;
+}
+
+.dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.btn-cancel {
+  padding: 6px 14px;
+  font-size: 13px;
+  border-radius: var(--radius);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+  cursor: pointer;
+
+  &:hover {
+    background: var(--color-bg-subtle);
+  }
+}
+
+.btn-delete {
+  padding: 6px 14px;
+  font-size: 13px;
+  border-radius: var(--radius);
+  border: none;
+  background: var(--color-danger);
+  color: #fff;
+  cursor: pointer;
+
+  &:hover:not(:disabled) {
+    opacity: 0.88;
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: default;
   }
 }
 </style>
