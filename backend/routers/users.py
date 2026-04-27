@@ -1,5 +1,4 @@
 from datetime import datetime
-from datetime import timezone
 
 from fastapi import APIRouter, Depends
 from sqlmodel import Session
@@ -12,9 +11,9 @@ from backend.database.session import get_session
 
 router = APIRouter()
 
-# Gemini 1.5 Flash pricing (USD per token)
-_INPUT_PRICE_PER_TOKEN = 0.075 / 1_000_000
-_OUTPUT_PRICE_PER_TOKEN = 0.30 / 1_000_000
+# Gemini 2.5 Flash pricing (USD per token)
+_INPUT_PRICE_PER_TOKEN = 0.15 / 1_000_000
+_OUTPUT_PRICE_PER_TOKEN = 0.60 / 1_000_000
 
 
 @router.get("/me")
