@@ -1,6 +1,15 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from "vue";
+import { marked } from "marked";
 import { useApplicationsStore, type AnalysisFeedback, type Skill } from "@/stores/applications";
+
+function md(text: string): string {
+  return marked.parse(text, { async: false }) as string;
+}
+
+function mdInline(text: string): string {
+  return marked.parseInline(text, { async: false }) as string;
+}
 
 const props = defineProps<{ applicationId: string }>();
 
@@ -252,26 +261,30 @@ watch(
       <div v-if="aiFeedback" class="ai-feedback">
         <h2 class="ai-heading">Recruiter Assessment</h2>
 
-        <p class="ai-overall">{{ aiFeedback.overall_assessment }}</p>
+        <!-- eslint-disable-next-line vue/no-v-html -->
+        <div class="ai-overall" v-html="md(aiFeedback.overall_assessment)" />
 
         <template v-if="aiFeedback.strong_points.length">
           <p class="feedback-label">Strong points</p>
           <ul class="ai-list ai-list--good">
-            <li v-for="(pt, i) in aiFeedback.strong_points" :key="i">{{ pt }}</li>
+            <!-- eslint-disable-next-line vue/no-v-html -->
+            <li v-for="(pt, i) in aiFeedback.strong_points" :key="i" v-html="mdInline(pt)" />
           </ul>
         </template>
 
         <template v-if="aiFeedback.weak_points.length">
           <p class="feedback-label">Weak points</p>
           <ul class="ai-list ai-list--bad">
-            <li v-for="(pt, i) in aiFeedback.weak_points" :key="i">{{ pt }}</li>
+            <!-- eslint-disable-next-line vue/no-v-html -->
+            <li v-for="(pt, i) in aiFeedback.weak_points" :key="i" v-html="mdInline(pt)" />
           </ul>
         </template>
 
         <template v-if="aiFeedback.recommended_changes.length">
           <p class="feedback-label">Recommended changes</p>
           <ul class="ai-list">
-            <li v-for="(pt, i) in aiFeedback.recommended_changes" :key="i">{{ pt }}</li>
+            <!-- eslint-disable-next-line vue/no-v-html -->
+            <li v-for="(pt, i) in aiFeedback.recommended_changes" :key="i" v-html="mdInline(pt)" />
           </ul>
         </template>
       </div>
@@ -598,7 +611,12 @@ export { SortIcon };
   font-size: 12px;
   line-height: 1.6;
   color: var(--color-text);
-  margin: 0;
+
+  :deep(p) { margin: 0 0 6px; }
+  :deep(p:last-child) { margin-bottom: 0; }
+  :deep(strong) { font-weight: 600; }
+  :deep(em) { font-style: italic; }
+  :deep(code) { font-family: monospace; font-size: 11px; background: var(--color-bg-subtle); padding: 1px 4px; border-radius: 3px; }
 }
 
 .ai-list {
@@ -612,6 +630,10 @@ export { SortIcon };
     font-size: 12px;
     line-height: 1.5;
     color: var(--color-text);
+
+    :deep(strong) { font-weight: 600; }
+    :deep(em) { font-style: italic; }
+    :deep(code) { font-family: monospace; font-size: 11px; background: var(--color-bg-subtle); padding: 1px 4px; border-radius: 3px; }
   }
 
   &--good li {
