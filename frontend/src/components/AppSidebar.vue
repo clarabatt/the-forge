@@ -376,36 +376,6 @@ const statusColor: Record<PipelineStatus, string> = {
   }
 }
 
-.select-content {
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
-  z-index: 50;
-  min-width: 180px;
-  padding: 4px;
-}
-
-.select-item {
-  padding: 7px 10px;
-  font-size: 13px;
-  border-radius: var(--radius);
-  cursor: pointer;
-  user-select: none;
-  color: var(--color-text);
-  outline: none;
-
-  &[data-highlighted] {
-    background: var(--color-bg-subtle);
-  }
-}
-
-.select-empty {
-  padding: 8px 10px;
-  font-size: 13px;
-  color: var(--color-text-muted);
-}
-
 // Upload
 .file-input-hidden {
   display: none;
@@ -608,5 +578,38 @@ const statusColor: Record<PipelineStatus, string> = {
   background: var(--color-primary);
   border-radius: 99px;
   transition: width 0.4s ease;
+}
+</style>
+
+<!-- Portal-rendered content can't receive scoped styles -->
+<style lang="scss">
+.select-content {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+  z-index: 200;
+  min-width: 180px;
+  padding: 4px;
+}
+
+.select-item {
+  padding: 7px 10px;
+  font-size: 13px;
+  border-radius: var(--radius);
+  cursor: pointer;
+  user-select: none;
+  color: var(--color-text);
+  outline: none;
+
+  &[data-highlighted] {
+    background: var(--color-bg-subtle);
+  }
+}
+
+.select-empty {
+  padding: 8px 10px;
+  font-size: 13px;
+  color: var(--color-text-muted);
 }
 </style>
