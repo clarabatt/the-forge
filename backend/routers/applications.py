@@ -7,8 +7,9 @@ from datetime import timezone
 from typing import AsyncGenerator
 
 import mammoth
+import weasyprint
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
-from fastapi.responses import StreamingResponse
+from fastapi.responses import Response, StreamingResponse
 from pydantic import BaseModel
 from sqlmodel import Session, delete
 
@@ -20,6 +21,39 @@ from backend.database.session import get_session
 from backend.gcs import download_bytes
 
 router = APIRouter()
+
+_RESUME_CSS = """
+@page {
+  size: Letter;
+  margin: 2.5cm 2.8cm;
+}
+body {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 11pt;
+  color: #111;
+  line-height: 1.5;
+}
+p { margin: 0 0 4px; }
+p:first-child strong { font-size: 20pt; font-weight: 700; letter-spacing: -0.01em; }
+p:nth-child(2) strong { font-size: 12pt; font-weight: 400; color: #444; }
+p:nth-child(3) { font-size: 10pt; color: #555; margin-bottom: 18px; }
+p > strong:only-child {
+  display: block;
+  font-size: 10pt;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  border-bottom: 1.5px solid #111;
+  padding-bottom: 2px;
+  margin-top: 16px;
+  margin-bottom: 6px;
+}
+h1 { font-size: 11pt; font-weight: 600; margin: 12px 0 0; }
+h2 { font-size: 10.5pt; font-weight: 400; margin: 0 0 8px; }
+h3 { font-size: 10pt; font-weight: 400; font-style: italic; color: #555; margin: 0 0 4px; }
+ul { margin: 4px 0 10px; padding-left: 18px; }
+li { font-size: 10.5pt; line-height: 1.55; margin-bottom: 3px; }
+"""
 
 
 class CreateApplicationRequest(BaseModel):
@@ -108,30 +142,65 @@ def retry_application(
     return app
 
 
+def _get_resume_bytes(application_id: uuid.UUID, user_id: uuid.UUID, session: Session) -> tuple[bytes, str]:
+    """Shared helper: fetch app + resume, return (bytes, file_name). Raises HTTPException on errors."""
+    repo = ApplicationRepository(session)
+    app = repo.get_by_user_and_id(user_id, application_id)
+    if not app:
+        raise HTTPException(status_code=404, detail="Application not found")
+    if not app.base_resume_id:
+        raise HTTPException(status_code=404, detail="No resume attached to this application")
+    resume = session.get(Resume, app.base_resume_id)
+    if not resume:
+        raise HTTPException(status_code=404, detail="Resume not found")
+    try:
+        data = download_bytes(resume.bucket_key)
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail="Resume file not found in storage")
+    return data, resume.file_name
+
+
+@router.get("/{application_id}/download/docx")
+def download_docx(
+    application_id: uuid.UUID,
+    session: Session = Depends(get_session),
+    user: User = Depends(get_current_user),
+):
+    data, file_name = _get_resume_bytes(application_id, user.id, session)
+    return Response(
+        content=data,
+        media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        headers={"Content-Disposition": f'attachment; filename="{file_name}"'},
+    )
+
+
+@router.get("/{application_id}/download/pdf")
+def download_pdf(
+    application_id: uuid.UUID,
+    session: Session = Depends(get_session),
+    user: User = Depends(get_current_user),
+):
+    data, file_name = _get_resume_bytes(application_id, user.id, session)
+    html = mammoth.convert_to_html(io.BytesIO(data)).value
+    pdf_bytes = weasyprint.HTML(string=html).write_pdf(
+        stylesheets=[weasyprint.CSS(string=_RESUME_CSS)]
+    )
+    pdf_name = file_name.rsplit(".", 1)[0] + ".pdf"
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{pdf_name}"'},
+    )
+
+
 @router.get("/{application_id}/resume-html")
 def get_resume_html(
     application_id: uuid.UUID,
     session: Session = Depends(get_session),
     user: User = Depends(get_current_user),
 ):
-    repo = ApplicationRepository(session)
-    app = repo.get_by_user_and_id(user.id, application_id)
-    if not app:
-        raise HTTPException(status_code=404, detail="Application not found")
-    if not app.base_resume_id:
-        raise HTTPException(status_code=404, detail="No resume attached to this application")
-
-    resume = session.get(Resume, app.base_resume_id)
-    if not resume:
-        raise HTTPException(status_code=404, detail="Resume not found")
-
-    try:
-        data = download_bytes(resume.bucket_key)
-    except FileNotFoundError:
-        raise HTTPException(status_code=404, detail="Resume file not found in storage")
-
-    result = mammoth.convert_to_html(io.BytesIO(data))
-    return {"html": result.value}
+    data, _ = _get_resume_bytes(application_id, user.id, session)
+    return {"html": mammoth.convert_to_html(io.BytesIO(data)).value}
 
 
 @router.get("/{application_id}/stream")

@@ -53,6 +53,17 @@ async function load(id: string) {
 }
 
 const isRetrying = ref(false);
+const isDownloading = ref(false);
+
+async function download(format: "docx" | "pdf") {
+  const id = route.params.id as string;
+  isDownloading.value = true;
+  try {
+    await store.downloadResume(id, format);
+  } finally {
+    isDownloading.value = false;
+  }
+}
 
 async function retry() {
   const id = route.params.id as string;
@@ -151,7 +162,47 @@ onUnmounted(closeSSE);
 
       <template v-else>
         <div class="detail-actions">
-          <button class="btn-download">Download Resume</button>
+          <div class="btn-group">
+            <button class="btn-group__btn" :disabled="isDownloading" @click="download('docx')">
+              <svg width="13" height="13" viewBox="0 0 13 13" fill="none" aria-hidden="true">
+                <path
+                  d="M6.5 1v8M3.5 6l3 3 3-3"
+                  stroke="currentColor"
+                  stroke-width="1.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+                <path
+                  d="M1.5 10.5v1h10v-1"
+                  stroke="currentColor"
+                  stroke-width="1.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+              DOCX
+            </button>
+            <div class="btn-group__divider" />
+            <button class="btn-group__btn" :disabled="isDownloading" @click="download('pdf')">
+              <svg width="13" height="13" viewBox="0 0 13 13" fill="none" aria-hidden="true">
+                <path
+                  d="M6.5 1v8M3.5 6l3 3 3-3"
+                  stroke="currentColor"
+                  stroke-width="1.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+                <path
+                  d="M1.5 10.5v1h10v-1"
+                  stroke="currentColor"
+                  stroke-width="1.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+              PDF
+            </button>
+          </div>
         </div>
         <ResumeViewer :application-id="store.current.id" />
       </template>
@@ -320,18 +371,38 @@ onUnmounted(closeSSE);
   margin-bottom: 24px;
 }
 
-.btn-download {
-  padding: 7px 14px;
-  background: var(--color-surface);
+.btn-group {
+  display: inline-flex;
   border: 1px solid var(--color-border);
   border-radius: var(--radius);
-  font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
-  color: var(--color-text);
+  overflow: hidden;
 
-  &:hover {
-    background: var(--color-bg-subtle);
+  &__btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 6px 14px;
+    background: var(--color-surface);
+    border: none;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    color: var(--color-text);
+    letter-spacing: 0.03em;
+
+    &:hover:not(:disabled) {
+      background: var(--color-bg-subtle);
+    }
+    &:disabled {
+      opacity: 0.5;
+      cursor: default;
+    }
+  }
+
+  &__divider {
+    width: 1px;
+    background: var(--color-border);
+    flex-shrink: 0;
   }
 }
 

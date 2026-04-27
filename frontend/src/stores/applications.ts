@@ -63,6 +63,23 @@ export const useApplicationsStore = defineStore('applications', () => {
     return app
   }
 
+  async function downloadResume(id: string, format: 'docx' | 'pdf'): Promise<void> {
+    const res = await fetch(`/api/applications/${id}/download/${format}`, { credentials: 'include' })
+    if (!res.ok) throw new Error(`Download failed (${res.status})`)
+    const disposition = res.headers.get('content-disposition') ?? ''
+    const match = disposition.match(/filename="([^"]+)"/)
+    const filename = match?.[1] ?? `resume.${format}`
+    const blob = await res.blob()
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = filename
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+  }
+
   async function fetchResumeHtml(id: string): Promise<string> {
     const res = await fetch(`/api/applications/${id}/resume-html`, { credentials: 'include' })
     if (!res.ok) throw new Error(`Failed to load resume (${res.status})`)
@@ -91,5 +108,5 @@ export const useApplicationsStore = defineStore('applications', () => {
     return es
   }
 
-  return { applications, current, isLoading, fetchAll, fetchOne, create, patch, retry, fetchResumeHtml, subscribeToStatus }
+  return { applications, current, isLoading, fetchAll, fetchOne, create, patch, retry, downloadResume, fetchResumeHtml, subscribeToStatus }
 })

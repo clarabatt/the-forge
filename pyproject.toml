@@ -20,6 +20,7 @@ dependencies = [
     "google-cloud-tasks>=2.17.0",
     "pyjwt>=2.12.1",
     "google-genai>=1.73.1",
+    "weasyprint>=68.1",
 ]
 
 [build-system]
