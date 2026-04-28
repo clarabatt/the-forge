@@ -98,9 +98,9 @@ async function deleteApp() {
   try {
     await store.deleteApplication(id);
     if (next) {
-      await router.push({ name: 'application', params: { id: next.id } });
+      await router.push({ name: "application", params: { id: next.id } });
     } else {
-      await router.push('/');
+      await router.push("/");
     }
   } finally {
     isDeleting.value = false;
@@ -173,7 +173,13 @@ onUnmounted(closeSSE);
                   @select="showDeleteConfirm = true"
                 >
                   <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
-                    <path d="M1.5 3h9M4.5 3V1.5h3V3M5 5.5v3M7 5.5v3M2.5 3l.5 7h6l.5-7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                    <path
+                      d="M1.5 3h9M4.5 3V1.5h3V3M5 5.5v3M7 5.5v3M2.5 3l.5 7h6l.5-7"
+                      stroke="currentColor"
+                      stroke-width="1.5"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
                   </svg>
                   Delete
                 </DropdownMenuItem>
@@ -192,7 +198,7 @@ onUnmounted(closeSSE);
         <p>
           {{
             store.current.status === PipelineStatus.ANALYZING
-              ? "Analyzing job description and résumé…"
+              ? "Analyzing job description and resume…"
               : "Starting…"
           }}
         </p>
@@ -267,7 +273,7 @@ onUnmounted(closeSSE);
         <div class="dialog-actions">
           <DialogClose class="btn-cancel">Cancel</DialogClose>
           <button class="btn-delete" :disabled="isDeleting" @click="deleteApp">
-            {{ isDeleting ? 'Deleting…' : 'Delete' }}
+            {{ isDeleting ? "Deleting…" : "Delete" }}
           </button>
         </div>
       </DialogContent>

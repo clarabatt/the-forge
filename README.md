@@ -1,6 +1,6 @@
 # The Forge
 
-AI-powered résumé tailoring. Upload a base `.docx`, paste a job description, and three sequential AI agents produce a tailored résumé — with a programmatic validator enforcing forbidden edits (dates, employer names, job titles).
+AI-powered resume tailoring. Upload a base `.docx`, paste a job description, and three sequential AI agents produce a tailored resume — with a programmatic validator enforcing forbidden edits (dates, employer names, job titles).
 
 ---
 
