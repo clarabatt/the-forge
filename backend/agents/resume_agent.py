@@ -1,4 +1,4 @@
-"""Resume Agent — parses raw résumé text into structured accomplishment blocks."""
+"""Resume Agent — parses raw resume text into structured accomplishment blocks."""
 
 import json
 import logging
@@ -12,16 +12,16 @@ from backend.config import settings
 logger = logging.getLogger(__name__)
 
 _SYSTEM_PROMPT = """\
-You are a résumé parser. Given plain-text résumé content, extract every accomplishment
-or responsibility bullet point into structured blocks.
+You are a resume parser. Given plain-text resume content, extract the summary section
+and every accomplishment or responsibility bullet point into structured blocks.
 
 Return ONLY valid JSON matching this exact schema:
 {
   "blocks": [
     {
       "id": "<uuid string>",
-      "type": "accomplishment",
-      "text": "<exact bullet text as written>",
+      "type": "summary | accomplishment",
+      "text": "<exact text as written>",
       "employer": "<company or institution name, or null>",
       "date_range": "<date range string as written, or null>",
       "skills_detected": ["<skill1>", "<skill2>"]
@@ -29,10 +29,25 @@ Return ONLY valid JSON matching this exact schema:
   ]
 }
 
+Skill extraction guidance for skills_detected:
+- Include ALL of: programming languages, frameworks, libraries, cloud services, tools,
+  databases, methodologies (Agile, CI/CD, TDD), and domain knowledge
+  (e.g. "distributed systems", "ML pipelines", "payment processing").
+- Extract the canonical skill name, not a full phrase.
+- Example: "Built and deployed ML pipelines on AWS SageMaker using Python and Airflow"
+  → skills_detected: ["ML pipelines", "AWS SageMaker", "Python", "Airflow"]
+- Example: "Led cross-functional Agile teams delivering microservices on Kubernetes"
+  → skills_detected: ["Agile", "microservices", "Kubernetes"]
+- If a block mentions no identifiable skill, return [].
+
 Rules:
+- If the resume contains a Summary, Professional Summary, Profile, or About section,
+  extract the entire paragraph text as ONE block with type "summary".
+  employer and date_range must be null for summary blocks.
+- Skip navigation headings only (Experience, Education, Skills, Certifications, etc.)
+  and contact info lines. Do NOT skip summary or profile paragraph content.
 - Preserve the exact wording of each bullet — never paraphrase.
 - One block per bullet point or sentence of substance.
-- Skip section headings, contact info, and blank lines.
 - Generate a fresh UUID (v4 format) for each block id.
 - employer and date_range come from the surrounding section context, not the bullet itself.
 """
