@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, useTemplateRef } from "vue";
+import { computed, ref, useTemplateRef, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import {
   SelectContent,
@@ -20,6 +20,12 @@ const emit = defineEmits<{ "new-application": [] }>();
 
 const route = useRoute();
 const router = useRouter();
+
+async function logout() {
+  menuOpen.value = false;
+  await authStore.logout();
+  router.push({ name: "login" });
+}
 const appsStore = useApplicationsStore();
 const resumesStore = useResumesStore();
 const authStore = useAuthStore();
@@ -60,6 +66,24 @@ const costDisplay = computed(() => {
 function selectApp(id: string) {
   router.push({ name: "application", params: { id } });
 }
+
+const menuOpen = ref(false);
+const menuRef = useTemplateRef<HTMLDivElement>("menuRef");
+
+function toggleMenu() {
+  menuOpen.value = !menuOpen.value;
+}
+
+function onClickOutside(e: MouseEvent) {
+  if (menuRef.value && !menuRef.value.contains(e.target as Node)) {
+    menuOpen.value = false;
+  }
+}
+
+watch(menuOpen, (open) => {
+  if (open) document.addEventListener("mousedown", onClickOutside);
+  else document.removeEventListener("mousedown", onClickOutside);
+});
 
 const fileInput = useTemplateRef<HTMLInputElement>("fileInput");
 const isUploading = ref(false);
@@ -121,7 +145,7 @@ const statusColor: Record<PipelineStatus, string> = {
   <aside class="sidebar" :class="{ 'sidebar--collapsed': collapsed }">
     <!-- Header -->
     <div class="sidebar-header">
-      <img v-if="!collapsed" src="/logo.png" alt="The Forge" class="sidebar-logo" />
+      <span v-if="!collapsed" class="sidebar-title">The Forge</span>
       <button
         class="sidebar-toggle"
         :aria-label="collapsed ? 'Expand sidebar' : 'Collapse sidebar'"
@@ -270,6 +294,27 @@ const statusColor: Record<PipelineStatus, string> = {
           <div class="cost-bar-fill" :style="{ width: costDisplay.pct + '%' }" />
         </div>
       </div>
+
+      <div ref="menuRef" class="footer-menu">
+        <button class="menu-trigger" title="More options" @click="toggleMenu">
+          <svg width="15" height="15" viewBox="0 0 15 15" fill="none" aria-hidden="true">
+            <circle cx="7.5" cy="2.5" r="1.25" fill="currentColor" />
+            <circle cx="7.5" cy="7.5" r="1.25" fill="currentColor" />
+            <circle cx="7.5" cy="12.5" r="1.25" fill="currentColor" />
+          </svg>
+        </button>
+        <div v-if="menuOpen" class="menu-dropdown">
+          <button class="menu-item menu-item--danger" @click="logout">
+            <svg width="14" height="14" viewBox="0 0 15 15" fill="none" aria-hidden="true">
+              <path
+                d="M3 1.5A1.5 1.5 0 0 1 4.5 0h6A1.5 1.5 0 0 1 12 1.5v3a.5.5 0 0 1-1 0v-3a.5.5 0 0 0-.5-.5h-6a.5.5 0 0 0-.5.5v12a.5.5 0 0 0 .5.5h6a.5.5 0 0 0 .5-.5v-3a.5.5 0 0 1 1 0v3A1.5 1.5 0 0 1 10.5 15h-6A1.5 1.5 0 0 1 3 13.5V1.5ZM9.854 5.146a.5.5 0 1 0-.708.708L10.793 7.5H5.5a.5.5 0 0 0 0 1h5.293l-1.647 1.646a.5.5 0 0 0 .708.708l2.5-2.5a.5.5 0 0 0 0-.708l-2.5-2.5Z"
+                fill="currentColor"
+              />
+            </svg>
+            Log out
+          </button>
+        </div>
+      </div>
     </div>
   </aside>
 </template>
@@ -301,11 +346,11 @@ const statusColor: Record<PipelineStatus, string> = {
   flex-shrink: 0;
 }
 
-.sidebar-logo {
-  height: 50px;
-  width: auto;
-  object-fit: contain;
-  object-position: left center;
+.sidebar-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--color-text);
+  letter-spacing: -0.01em;
 }
 
 .sidebar-toggle {
@@ -542,6 +587,68 @@ const statusColor: Record<PipelineStatus, string> = {
   font-weight: 600;
   color: #fff;
   line-height: 1;
+}
+
+.footer-menu {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.menu-trigger {
+  background: none;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 6px;
+  border-radius: var(--radius);
+  color: var(--color-text-muted);
+
+  &:hover {
+    background: var(--color-border);
+    color: var(--color-text);
+  }
+}
+
+.menu-dropdown {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  right: 0;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  padding: 4px;
+  min-width: 140px;
+  z-index: 100;
+}
+
+.menu-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px;
+  background: none;
+  border: none;
+  border-radius: var(--radius);
+  font-size: 13px;
+  cursor: pointer;
+  color: var(--color-text);
+  text-align: left;
+
+  &:hover {
+    background: var(--color-bg-subtle);
+  }
+
+  &--danger {
+    color: var(--color-danger);
+
+    &:hover {
+      background: color-mix(in srgb, var(--color-danger) 10%, transparent);
+    }
+  }
 }
 
 .footer-cost {

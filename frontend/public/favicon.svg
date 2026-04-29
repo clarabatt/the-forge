@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- Anvil body with horn -->
+  <path d="M4 16 L9 10 L25 10 A3 3 0 0 1 28 13 L28 17 A2 2 0 0 1 26 19 L22 19 L21 23 L11 23 L10 19 L6 19 A2 2 0 0 1 4 17 Z" fill="#2563eb"/>
+  <!-- Anvil base -->
+  <rect x="10" y="23" width="12" height="4" rx="1.5" fill="#2563eb"/>
+</svg>
