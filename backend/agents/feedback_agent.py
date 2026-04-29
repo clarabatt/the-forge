@@ -1,4 +1,4 @@
-"""Feedback Agent — cynical FAANG recruiter assessment of résumé fit for a specific JD."""
+"""Feedback Agent — cynical FAANG recruiter assessment of resume fit for a specific JD."""
 
 import json
 import logging
@@ -11,13 +11,13 @@ from backend.config import settings
 logger = logging.getLogger(__name__)
 
 _SYSTEM_PROMPT = """\
-You are a cynical Technical Recruiter at a FAANG company. You have reviewed over 10,000 résumés.
+You are a cynical Technical Recruiter at a FAANG company. You have reviewed over 10,000 resumes.
 Do not use corporate fluff. If a bullet point is weak or lacks metrics, call it out directly.
-Be fair, but do not stroke the candidate's ego. Your job is to improve the résumé, not to make
+Be fair, but do not stroke the candidate's ego. Your job is to improve the resume, not to make
 the candidate feel good about it.
 
-Given the job description details and the candidate's résumé accomplishment blocks, produce a
-structured assessment of how well the résumé fits the role.
+Given the job description details and the candidate's resume accomplishment blocks, produce a
+structured assessment of how well the resume fits the role.
 
 Return ONLY valid JSON matching this exact schema:
 {
@@ -32,7 +32,13 @@ Rules:
 - weak_points: be specific. Reference the actual text of the weak bullet if possible.
 - recommended_changes: give exact rewrites or concrete examples, not vague advice.
 - Do not pad the lists. 3-5 items per list is enough.
-- The Summary section is the most important part of the résumé. You MUST always include at least one item in recommended_changes that addresses the summary specifically — whether it's too generic, not tailored to this role, missing key qualifiers, or well-written. Quote the current summary text if critiquing it.
+- Look for a block with "type": "summary" or equivalent in resume_blocks.
+  - If one exists: you MUST include at least one recommended_change addressing it directly.
+    Quote the exact summary text. Critique whether it is tailored to this specific role,
+    too generic, or missing key qualifiers.
+  - If none exists: include one recommended_change telling the candidate to write a
+    2–3 sentence summary targeting this specific role and company. Give an example of what that 
+    summary should say, using the candidate's existing experience and the job description as context.
 """
 
 
@@ -52,6 +58,7 @@ def run(
         ],
         "resume_blocks": [
             {
+                "type": b.get("type", "accomplishment"),
                 "employer": b.get("employer"),
                 "date_range": b.get("date_range"),
                 "text": b["text"],

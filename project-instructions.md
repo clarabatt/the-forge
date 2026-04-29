@@ -2,7 +2,7 @@
 
 ## Project objective
 
-Speed up the process of tailoring a base résumé for each job application. The user uploads a `.docx` once, provides job descriptions, and the system uses AI agents to identify skill gaps, suggest modifications within strict guardrails, and export a clean, consistently formatted document.
+Speed up the process of tailoring a base resume for each job application. The user uploads a `.docx` once, provides job descriptions, and the system uses AI agents to identify skill gaps, suggest modifications within strict guardrails, and export a clean, consistently formatted document.
 
 ---
 
@@ -10,12 +10,12 @@ Speed up the process of tailoring a base résumé for each job application. The 
 
 ### Core features
 
-1. **Upload base résumé** (`.docx`). System parses and stores it. Images, icons, and column grids are stripped with a warning — the output is always rendered against the standard template.
+1. **Upload base resume** (`.docx`). System parses and stores it. Images, icons, and column grids are stripped with a warning — the output is always rendered against the standard template.
 2. **Standard template download.** A fixed, versioned `.docx` template stored in GCS. Users can download the blank template to understand what the output will look like.
 3. **New application from job description.** Pasting a JD creates an application record. The application title is automatically set to `Company Name: Job Title`. Each application has a status: `applied`, `denied`, `cancelled`, `approved`.
 4. **AI-driven skill gap analysis.** Three sequential agents (JD Agent → Resume Agent → Diff Agent) produce a ranked skill list and a modification proposal. The Judge validator enforces all forbidden-edit rules programmatically.
-5. **User approval gate.** Before the Diff Agent runs, the user reviews the ranked skill list and explicitly approves or excludes each item. Skills not found in the base résumé require explicit opt-in.
-6. **Diff viewer.** The browser renders an HTML diff between the base and tailored résumé. A separate clean `.docx` is available for download — no attempt is made to embed tracked-changes markup inside the DOCX itself.
+5. **User approval gate.** Before the Diff Agent runs, the user reviews the ranked skill list and explicitly approves or excludes each item. Skills not found in the base resume require explicit opt-in.
+6. **Diff viewer.** The browser renders an HTML diff between the base and tailored resume. A separate clean `.docx` is available for download — no attempt is made to embed tracked-changes markup inside the DOCX itself.
 7. **File versioning.** Full version history is stored in the DB and GCS, but only the latest per application is exposed in the UI.
 8. **Download.** Signed GCS URLs for both base and tailored versions.
 9. **Google login.** OAuth 2.0 / OIDC via Google.
@@ -56,7 +56,7 @@ Speed up the process of tailoring a base résumé for each job application. The 
 
 | Technology                    | Rationale                                                                                                                      |
 | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| Google AI SDK (Python)        | Direct access to gemini-1.5-pro with structured JSON output mode.                                                    |
+| Google AI SDK (Python)        | Direct access to gemini-1.5-pro with structured JSON output mode.                                                              |
 | Structured output (JSON mode) | All agent outputs are typed JSON. Parse failures trigger a retry, never a crash.                                               |
 | Cloud Run Jobs                | Long-running containers for agent execution. Avoids Cloud Run's 60s request timeout — LLM chains regularly hit 60–90s.         |
 | Cloud Tasks                   | Queue layer. HTTP callbacks with built-in retry and deduplication. FastAPI enqueues a task; the task triggers a Cloud Run Job. |
@@ -141,7 +141,7 @@ Because LLM calls are slow (60–90s possible), the backend is a state-driven or
 | `company_name`       | String                 |                                                                                                |
 | `job_title`          | String                 |                                                                                                |
 | `application_status` | Enum                   | `applied`, `denied`, `cancelled`, `approved`. Separate from pipeline status.                   |
-| `base_resume_id`     | UUID FK → `resumes.id` | The résumé version used as input.                                                              |
+| `base_resume_id`     | UUID FK → `resumes.id` | The resume version used as input.                                                              |
 | `template_version`   | String                 | e.g. `v1`. Stored at creation time; template updates do not retroactively break old downloads. |
 | `retry_count`        | Integer                | Default 0. Incremented on each `PENDING_RETRY` transition.                                     |
 | `error_message`      | Text                   | Nullable. Populated on `FAILED`.                                                               |
@@ -153,7 +153,7 @@ Because LLM calls are slow (60–90s possible), the backend is a state-driven or
 | ------------------ | --------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
 | `id`               | UUID PK                           |                                                                                                                       |
 | `user_id`          | UUID FK → `users.id`              | Ownership.                                                                                                            |
-| `application_id`   | UUID FK → `applications.id`       | Nullable. Null for base résumés not yet attached to an application.                                                   |
+| `application_id`   | UUID FK → `applications.id`       | Nullable. Null for base resumes not yet attached to an application.                                                   |
 | `file_name`        | String                            | Original filename, for UI display only.                                                                               |
 | `bucket_key`       | String                            | GCS path, e.g. `uploads/{user_id}/{resume_id}.docx`. Store the key, not the full URL. Generate signed URLs on demand. |
 | `raw_text`         | Text                              | Mammoth/python-docx extracted output.                                                                                 |
@@ -161,7 +161,7 @@ Because LLM calls are slow (60–90s possible), the backend is a state-driven or
 | `parent_resume_id` | UUID FK → `resumes.id` (nullable) | Null for the original upload.                                                                                         |
 | `version_number`   | Integer                           | Incremented per `parent_resume_id`.                                                                                   |
 | `is_latest`        | Boolean (indexed)                 | Flipped by application logic on each new tailored version.                                                            |
-| `template_version` | String                            | The template version this résumé was rendered against.                                                                |
+| `template_version` | String                            | The template version this resume was rendered against.                                                                |
 | `created_at`       | DateTime                          |                                                                                                                       |
 
 ### `skills`
@@ -181,16 +181,16 @@ Because LLM calls are slow (60–90s possible), the backend is a state-driven or
 
 This table is **append-only**. Never update rows. Compute totals via a Postgres view.
 
-| Column           | Type                                   | Notes                                                         |
-| ---------------- | -------------------------------------- | ------------------------------------------------------------- |
-| `id`             | UUID PK                                |                                                               |
-| `user_id`        | UUID FK → `users.id`                   |                                                               |
-| `application_id` | UUID FK → `applications.id` (nullable) |                                                               |
-| `agent_name`     | Enum                                   | `JD`, `RESUME`, `DIFF`, `JUDGE_RETRY`.                        |
+| Column           | Type                                   | Notes                                               |
+| ---------------- | -------------------------------------- | --------------------------------------------------- |
+| `id`             | UUID PK                                |                                                     |
+| `user_id`        | UUID FK → `users.id`                   |                                                     |
+| `application_id` | UUID FK → `applications.id` (nullable) |                                                     |
+| `agent_name`     | Enum                                   | `JD`, `RESUME`, `DIFF`, `JUDGE_RETRY`.              |
 | `model`          | String                                 | e.g. `gemini-1.5-pro`. Store the full model string. |
-| `input_tokens`   | Integer                                |                                                               |
-| `output_tokens`  | Integer                                |                                                               |
-| `created_at`     | DateTime                               |                                                               |
+| `input_tokens`   | Integer                                |                                                     |
+| `output_tokens`  | Integer                                |                                                     |
+| `created_at`     | DateTime                               |                                                     |
 
 **Monthly cost view** (Postgres):
 
@@ -247,7 +247,7 @@ Output JSON:
       "found_in_resume": false
     }
   ],
-  "vibe_check": "High-growth B2B SaaS. Values engineering rigour and measurable impact. Avoids corporate fluff in job listing — expect same in résumé.",
+  "vibe_check": "High-growth B2B SaaS. Values engineering rigour and measurable impact. Avoids corporate fluff in job listing — expect same in resume.",
   "must_have_count": 5
 }
 ```
@@ -256,7 +256,7 @@ Skills ranked 1–10 by the JD Agent. The top 5 are flagged `must-have`. The Jud
 
 **2. Resume Agent**
 
-Input: raw résumé text.
+Input: raw resume text.
 
 Output JSON:
 
@@ -275,7 +275,7 @@ Output JSON:
 }
 ```
 
-Each block has a UUID. The Diff Agent references blocks by ID — it never reconstructs or re-parses the résumé.
+Each block has a UUID. The Diff Agent references blocks by ID — it never reconstructs or re-parses the resume.
 
 **3. Diff Agent**
 
@@ -353,7 +353,7 @@ The overall feedback (not the diff — the written assessment) uses a deliberate
 
 **System prompt snippet:**
 
-> You are a cynical Technical Recruiter at a FAANG company. You have reviewed over 10,000 résumés. Do not use corporate fluff. If a bullet point is weak or lacks metrics, call it out directly. Be fair, but do not stroke the candidate's ego. Your job is to improve the résumé, not to make the candidate feel good about it.
+> You are a cynical Technical Recruiter at a FAANG company. You have reviewed over 10,000 resumes. Do not use corporate fluff. If a bullet point is weak or lacks metrics, call it out directly. Be fair, but do not stroke the candidate's ego. Your job is to improve the resume, not to make the candidate feel good about it.
 
 Feedback is structured as:
 
@@ -494,7 +494,7 @@ Two levels, both required:
 
 ### File storage hygiene
 
-Apply a GCS lifecycle policy to the `uploads/` prefix: delete objects older than 7 days. The `outputs/` prefix is retained (user's tailored résumés). This limits storage of raw uploaded files and reduces GDPR exposure.
+Apply a GCS lifecycle policy to the `uploads/` prefix: delete objects older than 7 days. The `outputs/` prefix is retained (user's tailored resumes). This limits storage of raw uploaded files and reduces GDPR exposure.
 
 ---
 
@@ -506,7 +506,7 @@ The standard template is stored at `gs://{bucket}/templates/v1/base.docx`. When 
 2. Update the `CURRENT_TEMPLATE_VERSION` config value.
 3. New applications use `v2`. Existing applications retain `v1` in `applications.template_version` and continue to download against the `v1` template.
 
-This means old tailored résumés remain downloadable and look correct indefinitely.
+This means old tailored resumes remain downloadable and look correct indefinitely.
 
 ---
 
@@ -519,7 +519,7 @@ This means old tailored résumés remain downloadable and look correct indefinit
 | Job titles / role names must not change          | Judge: token comparison against Resume Agent blocks      |
 | Company names must not change                    | Judge: token comparison                                  |
 | Capitalisation of technology names is allowed    | Explicitly permitted in Diff Agent system prompt         |
-| Skills not in base résumé require user opt-in    | Enforced at the approval gate — user must mark `include` |
+| Skills not in base resume require user opt-in    | Enforced at the approval gate — user must mark `include` |
 | All `must-have` skills must appear at least once | Judge: string search in final output                     |
 
 ---

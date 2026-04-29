@@ -1,6 +1,6 @@
 <script setup lang="ts">
 function loginWithGoogle() {
-  window.location.href = '/auth/google/login'
+  window.location.href = "/auth/google/login";
 }
 </script>
 
@@ -8,10 +8,8 @@ function loginWithGoogle() {
   <div class="login-page">
     <div class="login-card">
       <h1 class="login-title">The Forge</h1>
-      <p class="login-subtitle">AI-powered résumé tailoring</p>
-      <button class="btn-google" @click="loginWithGoogle">
-        Sign in with Google
-      </button>
+      <p class="login-subtitle">AI-powered resume tailoring</p>
+      <button class="btn-google" @click="loginWithGoogle">Sign in with Google</button>
     </div>
   </div>
 </template>

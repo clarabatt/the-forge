@@ -1,7 +1,7 @@
 [project]
 name = "the-forge"
 version = "0.1.0"
-description = "AI-powered résumé tailoring tool"
+description = "AI-powered resume tailoring tool"
 requires-python = ">=3.12"
 dependencies = [
     "fastapi>=0.115.0",
