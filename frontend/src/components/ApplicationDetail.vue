@@ -68,6 +68,7 @@ const isRetrying = ref(false);
 const isDeleting = ref(false);
 const isDownloading = ref(false);
 const showDeleteConfirm = ref(false);
+const showJdModal = ref(false);
 
 async function download(format: "docx" | "pdf") {
   const id = route.params.id as string;
@@ -144,6 +145,14 @@ onUnmounted(closeSSE);
             </DropdownMenuTrigger>
             <DropdownMenuPortal>
               <DropdownMenuContent class="menu-content" :side-offset="4" align="end">
+                <DropdownMenuItem class="menu-item" @select="showJdModal = true">
+                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+                    <rect x="2" y="1" width="8" height="10" rx="1" stroke="currentColor" stroke-width="1.5" />
+                    <path d="M4 4h4M4 6.5h4M4 9h2.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" />
+                  </svg>
+                  View job description
+                </DropdownMenuItem>
+                <DropdownMenuSeparator class="menu-separator" />
                 <DropdownMenuItem
                   class="menu-item"
                   :disabled="store.current.status !== PipelineStatus.FAILED || isRetrying"
@@ -263,6 +272,19 @@ onUnmounted(closeSSE);
       </template>
     </template>
   </div>
+
+  <DialogRoot :open="showJdModal" @update:open="showJdModal = $event">
+    <DialogPortal>
+      <DialogOverlay class="dialog-overlay" />
+      <DialogContent class="dialog-content jd-dialog-content">
+        <DialogTitle class="dialog-title">Job Description</DialogTitle>
+        <div class="jd-body">{{ store.current?.job_description }}</div>
+        <div class="dialog-actions">
+          <DialogClose class="btn-cancel">Close</DialogClose>
+        </div>
+      </DialogContent>
+    </DialogPortal>
+  </DialogRoot>
 
   <DialogRoot :open="showDeleteConfirm" @update:open="showDeleteConfirm = $event">
     <DialogPortal>
@@ -520,6 +542,22 @@ onUnmounted(closeSSE);
   to {
     transform: rotate(360deg);
   }
+}
+
+.jd-dialog-content {
+  width: min(640px, calc(100vw - 32px));
+  max-height: 80vh;
+}
+
+.jd-body {
+  font-size: 13px;
+  color: var(--color-text);
+  white-space: pre-wrap;
+  line-height: 1.6;
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+  margin: 0;
 }
 
 .dialog-overlay {

@@ -35,6 +35,7 @@ export interface Application {
   id: string
   company_name: string
   job_title: string
+  job_description: string
   status: PipelineStatus
   application_status: 'applied' | 'denied' | 'cancelled' | 'approved'
   analysis_feedback: string | null
