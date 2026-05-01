@@ -84,7 +84,7 @@ async function submit() {
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.4);
-  z-index: 40;
+  z-index: 300;
   animation: fadeIn 0.15s ease;
 }
 
@@ -93,7 +93,7 @@ async function submit() {
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  z-index: 50;
+  z-index: 310;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
