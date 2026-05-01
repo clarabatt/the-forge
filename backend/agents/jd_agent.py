@@ -34,6 +34,16 @@ Rules:
 - confidence reflects how explicitly the skill is emphasised in the JD.
 - must_have_count is typically 3–6.
 - company_name and job_title must come from the JD text, not be inferred.
+- Only include Soft Skills that are explicitly stated in the JD text (e.g. "excellent communication skills", "team player", "leadership"). Do NOT infer or assume soft skills from the role type or industry — if the JD does not say it, do not add it.
+- Acronym handling: always expand acronyms to their full, canonical skill name.
+  Common examples: MO → Microsoft Office, MS → Microsoft Suite, PP → PowerPoint,
+  XL/Excel → Microsoft Excel, GS → Google Sheets, CRM → Customer Relationship Management,
+  ERP → Enterprise Resource Planning, BI → Business Intelligence, ETL → Extract Transform Load,
+  ML → Machine Learning, AI → Artificial Intelligence, NLP → Natural Language Processing,
+  CI/CD → Continuous Integration / Continuous Delivery, IaC → Infrastructure as Code,
+  k8s → Kubernetes, AWS → Amazon Web Services, GCP → Google Cloud Platform, AZ → Azure.
+  If an acronym is industry-specific and unambiguous in context, expand it and use the
+  full name as the skill name. If genuinely ambiguous, keep the acronym.
 """
 
 
