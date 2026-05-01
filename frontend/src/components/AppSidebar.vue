@@ -16,7 +16,8 @@ import { useResumesStore } from "@/stores/resumes";
 import { useAuthStore } from "@/stores/auth";
 import { getAppTitle } from "@/utils/application";
 
-const emit = defineEmits<{ "new-application": [] }>();
+const props = defineProps<{ mobileOpen?: boolean }>();
+const emit = defineEmits<{ "new-application": []; close: [] }>();
 
 const route = useRoute();
 const router = useRouter();
@@ -65,6 +66,7 @@ const costDisplay = computed(() => {
 
 function selectApp(id: string) {
   router.push({ name: "application", params: { id } });
+  emit("close");
 }
 
 const menuOpen = ref(false);
@@ -142,7 +144,8 @@ const statusColor: Record<PipelineStatus, string> = {
 </script>
 
 <template>
-  <aside class="sidebar" :class="{ 'sidebar--collapsed': collapsed }">
+  <div v-if="props.mobileOpen" class="mobile-backdrop" @click="emit('close')" />
+  <aside class="sidebar" :class="{ 'sidebar--collapsed': collapsed, 'sidebar--mobile-open': props.mobileOpen }">
     <!-- Header -->
     <div class="sidebar-header">
       <span v-if="!collapsed" class="sidebar-title">The Forge</span>
@@ -334,6 +337,34 @@ const statusColor: Record<PipelineStatus, string> = {
   &--collapsed {
     width: 56px;
   }
+
+  @media (max-width: 640px) {
+    position: fixed;
+    left: 0;
+    top: 0;
+    height: 100%;
+    width: 280px;
+    z-index: 200;
+    transform: translateX(-100%);
+    transition: transform 0.25s ease;
+    box-shadow: none;
+
+    &--collapsed {
+      width: 280px; // no icon-mode on mobile
+    }
+
+    &--mobile-open {
+      transform: translateX(0);
+      box-shadow: 4px 0 24px rgba(0, 0, 0, 0.12);
+    }
+  }
+}
+
+.mobile-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.35);
+  z-index: 199;
 }
 
 .sidebar-header {

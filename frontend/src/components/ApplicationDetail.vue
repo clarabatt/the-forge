@@ -306,6 +306,10 @@ onUnmounted(closeSSE);
 <style lang="scss" scoped>
 .application-detail {
   padding: 32px 40px;
+
+  @media (max-width: 640px) {
+    padding: 20px 16px;
+  }
 }
 
 .content-grid {
@@ -344,6 +348,11 @@ onUnmounted(closeSSE);
   justify-content: space-between;
   margin-bottom: 20px;
   gap: 16px;
+
+  @media (max-width: 640px) {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
 }
 
 .detail-title {
