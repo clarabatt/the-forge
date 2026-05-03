@@ -7,16 +7,18 @@ In dev (DEV_MODE=true) it runs as a FastAPI BackgroundTask.
 import asyncio
 import json
 import logging
+import re
 import uuid
 from concurrent.futures import ThreadPoolExecutor
 
 from sqlmodel import Session
 
-from backend.agents import feedback_agent, jd_agent, resume_agent
+from backend.agents import cover_letter_agent, feedback_agent, jd_agent, resume_agent
 from backend.config import settings
 from backend.database.models import (
     AgentName,
     Application,
+    CoverLetter,
     LlmUsageLog,
     PipelineStatus,
     Skill,
@@ -57,6 +59,24 @@ def _log_usage(
     session.commit()
 
 
+def _skill_matched(jd_name: str, detected: set[str]) -> bool:
+    """Return True if jd_name can be matched against the detected skill set.
+
+    Falls back from exact match → substring containment → token overlap so that
+    composite JD names like "Databases (SQL/NoSQL)" match detected "sql"/"nosql",
+    and expanded forms like "Test-Driven Development" match detected "tdd" when the
+    resume agent emits both forms.
+    """
+    lower = jd_name.lower()
+    if lower in detected:
+        return True
+    for d in detected:
+        if d and d in lower:
+            return True
+    tokens = {t for t in re.split(r"[\s/()\-,./]+", lower) if len(t) > 2}
+    return bool(tokens & detected)
+
+
 def _build_skills(
     app_id: uuid.UUID,
     jd_skills: list[dict],
@@ -71,7 +91,7 @@ def _build_skills(
     skills = []
     for item in jd_skills:
         name = item.get("name", "")
-        found = name.lower() in detected_names
+        found = _skill_matched(name, detected_names)
         skills.append(
             Skill(
                 application_id=app_id,
@@ -135,10 +155,26 @@ def run_pipeline(application_id: uuid.UUID) -> None:
                 "recommended_changes": feedback_result["recommended_changes"],
             })
 
+            # cover letter agent — uses feedback strong points + skills + resume blocks
+            cl_result = cover_letter_agent.run(
+                company_name=jd_result["company_name"],
+                job_title=jd_result["job_title"],
+                skills=jd_result["skills"],
+                resume_blocks=resume_result["blocks"],
+                feedback=feedback_result,
+            )
+            cover_letter = CoverLetter(
+                application_id=app.id,
+                content=cl_result["content"],
+                questions=json.dumps(cl_result["questions"]),
+            )
+            session.add(cover_letter)
+
             # log usage
             _log_usage(session, app, AgentName.JD, jd_result["usage"])
             _log_usage(session, app, AgentName.RESUME, resume_result["usage"])
             _log_usage(session, app, AgentName.DIFF, feedback_result["usage"])
+            _log_usage(session, app, AgentName.COVER_LETTER, cl_result["usage"])
 
             _transition(session, app, PipelineStatus.PENDING_APPROVAL)
 

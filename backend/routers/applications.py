@@ -13,10 +13,11 @@ from fastapi.responses import Response, StreamingResponse
 from pydantic import BaseModel
 from sqlmodel import Session, delete
 
+from backend.agents import cover_letter_agent
 from backend.auth import get_current_user
 from backend.config import settings
-from backend.database.models import Application, ApplicationStatus, PipelineStatus, Resume, Skill, User
-from backend.database.repositories import ApplicationRepository, SkillRepository
+from backend.database.models import AgentName, Application, ApplicationStatus, CoverLetter, LlmUsageLog, PipelineStatus, Resume, Skill, User
+from backend.database.repositories import ApplicationRepository, CoverLetterRepository, SkillRepository
 from backend.database.session import get_session
 from backend.gcs import download_bytes
 
@@ -218,6 +219,97 @@ def download_pdf(
         media_type="application/pdf",
         headers={"Content-Disposition": f'attachment; filename="{pdf_name}"'},
     )
+
+
+@router.post("/{application_id}/cover-letter/generate", status_code=200)
+def generate_cover_letter(
+    application_id: uuid.UUID,
+    session: Session = Depends(get_session),
+    user: User = Depends(get_current_user),
+):
+    repo = ApplicationRepository(session)
+    app = repo.get_by_user_and_id(user.id, application_id)
+    if not app:
+        raise HTTPException(status_code=404, detail="Application not found")
+    if not app.analysis_feedback:
+        raise HTTPException(
+            status_code=409,
+            detail="Cover letter cannot be generated until the analysis pipeline has completed",
+        )
+
+    resume = session.get(Resume, app.base_resume_id) if app.base_resume_id else None
+    raw_text = (resume.raw_text or "") if resume else ""
+
+    db_skills = SkillRepository(session).list_by_application(application_id)
+    skills = [
+        {"name": s.skill_name, "category": s.category, "rank": s.rank, "confidence": s.ai_confidence}
+        for s in db_skills
+    ]
+
+    resume_blocks = [{"type": "resume", "text": raw_text, "skills_detected": [
+        s.skill_name for s in db_skills if s.match_status.value == "found_in_resume"
+    ]}]
+
+    feedback = json.loads(app.analysis_feedback)
+
+    cl_result = cover_letter_agent.run(
+        company_name=app.company_name,
+        job_title=app.job_title,
+        skills=skills,
+        resume_blocks=resume_blocks,
+        feedback=feedback,
+    )
+
+    cl_repo = CoverLetterRepository(session)
+    existing = cl_repo.get_by_application(application_id)
+    if existing:
+        existing.content = cl_result["content"]
+        existing.questions = json.dumps(cl_result["questions"])
+        existing.created_at = datetime.now(timezone.utc)
+        session.add(existing)
+    else:
+        session.add(CoverLetter(
+            application_id=application_id,
+            content=cl_result["content"],
+            questions=json.dumps(cl_result["questions"]),
+        ))
+
+    log = LlmUsageLog(
+        user_id=user.id,
+        application_id=application_id,
+        agent_name=AgentName.COVER_LETTER,
+        model=settings.gemini_model,
+        input_tokens=cl_result["usage"].get("input_tokens", 0),
+        output_tokens=cl_result["usage"].get("output_tokens", 0),
+    )
+    session.add(log)
+    session.commit()
+
+    cl = cl_repo.get_by_application(application_id)
+    return {
+        "content": cl.content,
+        "created_at": cl.created_at,
+        "questions": json.loads(cl.questions or "[]"),
+    }
+
+
+@router.get("/{application_id}/cover-letter")
+def get_cover_letter(
+    application_id: uuid.UUID,
+    session: Session = Depends(get_session),
+    user: User = Depends(get_current_user),
+):
+    repo = ApplicationRepository(session)
+    if not repo.get_by_user_and_id(user.id, application_id):
+        raise HTTPException(status_code=404, detail="Application not found")
+    cl = CoverLetterRepository(session).get_by_application(application_id)
+    if not cl:
+        raise HTTPException(status_code=404, detail="Cover letter not yet available")
+    return {
+        "content": cl.content,
+        "created_at": cl.created_at,
+        "questions": json.loads(cl.questions or "[]"),
+    }
 
 
 @router.get("/{application_id}/resume-html")

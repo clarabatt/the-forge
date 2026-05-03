@@ -1,24 +1,14 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref, watch } from "vue";
+import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import {
-  DialogClose,
-  DialogContent,
-  DialogOverlay,
-  DialogPortal,
-  DialogRoot,
-  DialogTitle,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuPortal,
-  DropdownMenuRoot,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "radix-vue";
-import { PipelineStatus, useApplicationsStore } from "@/stores/applications";
+import { type CoverLetter, PipelineStatus, useApplicationsStore } from "@/stores/applications";
+import ApplicationActionsMenu from "@/components/ApplicationActionsMenu.vue";
 import ResumeViewer from "@/components/ResumeViewer.vue";
 import SkillsTable from "@/components/SkillsTable.vue";
 import { getAppTitle } from "@/utils/application";
+import StatusBadge from "@/components/ui/StatusBadge.vue";
+import BaseDialog from "@/components/ui/BaseDialog.vue";
+import Spinner from "@/components/ui/Spinner.vue";
 
 const route = useRoute();
 const router = useRouter();
@@ -33,6 +23,8 @@ function closeSSE() {
 
 async function load(id: string) {
   closeSSE();
+  coverLetter.value = null;
+  isGeneratingCL.value = false;
   await store.fetchOne(id);
 
   if (!store.current) return;
@@ -42,6 +34,8 @@ async function load(id: string) {
     PipelineStatus.FAILED,
     PipelineStatus.PENDING_APPROVAL,
   ]);
+  store.fetchCoverLetter(id).then((cl) => { coverLetter.value = cl }).catch(() => {});
+
   if (terminal.has(store.current.status)) return;
 
   eventSource = store.subscribeToStatus(id, async (event: MessageEvent) => {
@@ -67,8 +61,16 @@ async function load(id: string) {
 const isRetrying = ref(false);
 const isDeleting = ref(false);
 const isDownloading = ref(false);
+const isGeneratingCL = ref(false);
+const clJustGenerated = ref(false);
 const showDeleteConfirm = ref(false);
 const showJdModal = ref(false);
+const showCLModal = ref(false);
+const coverLetter = ref<CoverLetter | null>(null);
+const copied = ref(false);
+const jobDescription = computed(
+  () => store.current?.job_description.replace(/\n{3,}/g, "\n\n").trim() ?? "",
+);
 
 async function download(format: "docx" | "pdf") {
   const id = route.params.id as string;
@@ -89,6 +91,25 @@ async function retry() {
   } finally {
     isRetrying.value = false;
   }
+}
+
+async function generateCoverLetter() {
+  const id = route.params.id as string;
+  isGeneratingCL.value = true;
+  try {
+    coverLetter.value = await store.generateCoverLetter(id);
+    clJustGenerated.value = true;
+    setTimeout(() => { clJustGenerated.value = false; }, 2500);
+  } finally {
+    isGeneratingCL.value = false;
+  }
+}
+
+async function copyToClipboard() {
+  if (!coverLetter.value) return;
+  await navigator.clipboard.writeText(coverLetter.value.content);
+  copied.value = true;
+  setTimeout(() => { copied.value = false; }, 2000);
 }
 
 async function deleteApp() {
@@ -126,75 +147,35 @@ onUnmounted(closeSSE);
           <span class="detail-role">{{ store.current.job_title }}</span>
         </div>
         <div class="header-right">
-          <span class="badge" :class="`badge--${store.current.status.toLowerCase()}`">
-            {{ store.current.status.replace(/_/g, " ") }}
-          </span>
-          <DropdownMenuRoot>
-            <DropdownMenuTrigger class="menu-trigger" aria-label="Application actions">
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 16 16"
-                fill="currentColor"
-                aria-hidden="true"
-              >
-                <circle cx="8" cy="3" r="1.25" />
-                <circle cx="8" cy="8" r="1.25" />
-                <circle cx="8" cy="13" r="1.25" />
-              </svg>
-            </DropdownMenuTrigger>
-            <DropdownMenuPortal>
-              <DropdownMenuContent class="menu-content" :side-offset="4" align="end">
-                <DropdownMenuItem class="menu-item" @select="showJdModal = true">
-                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
-                    <rect x="2" y="1" width="8" height="10" rx="1" stroke="currentColor" stroke-width="1.5" />
-                    <path d="M4 4h4M4 6.5h4M4 9h2.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" />
-                  </svg>
-                  View job description
-                </DropdownMenuItem>
-                <DropdownMenuSeparator class="menu-separator" />
-                <DropdownMenuItem
-                  class="menu-item"
-                  :disabled="store.current.status !== PipelineStatus.FAILED || isRetrying"
-                  @select="retry"
-                >
-                  <svg width="12" height="12" viewBox="-2 -2 14 14" fill="none" aria-hidden="true">
-                    <path
-                      d="M10.5 2A5.5 5.5 0 1 0 11 6.5"
-                      stroke="currentColor"
-                      stroke-width="1.5"
-                      stroke-linecap="round"
-                    />
-                    <path
-                      d="M8.5 2H10.5V0"
-                      stroke="currentColor"
-                      stroke-width="1.5"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                    />
-                  </svg>
-                  Retry
-                </DropdownMenuItem>
-                <DropdownMenuSeparator class="menu-separator" />
-                <DropdownMenuItem
-                  class="menu-item menu-item--danger"
-                  :disabled="isDeleting"
-                  @select="showDeleteConfirm = true"
-                >
-                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
-                    <path
-                      d="M1.5 3h9M4.5 3V1.5h3V3M5 5.5v3M7 5.5v3M2.5 3l.5 7h6l.5-7"
-                      stroke="currentColor"
-                      stroke-width="1.5"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                    />
-                  </svg>
-                  Delete
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenuPortal>
-          </DropdownMenuRoot>
+          <StatusBadge :status="store.current.status" />
+          <Transition name="cl-indicator">
+            <Spinner v-if="isGeneratingCL" :size="14" class="cl-indicator" />
+            <svg
+              v-else-if="clJustGenerated"
+              class="cl-indicator cl-indicator--done"
+              width="14"
+              height="14"
+              viewBox="0 0 14 14"
+              fill="none"
+              aria-hidden="true"
+            >
+              <circle cx="7" cy="7" r="6" stroke="currentColor" stroke-width="1.5" />
+              <path d="M4.5 7l2 2 3-3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+          </Transition>
+          <ApplicationActionsMenu
+            :status="store.current.status"
+            :has-feedback="!!store.current.analysis_feedback"
+            :cover-letter="coverLetter"
+            :is-retrying="isRetrying"
+            :is-deleting="isDeleting"
+            :is-generating-c-l="isGeneratingCL"
+            @view-jd="showJdModal = true"
+            @view-cover-letter="showCLModal = true"
+            @generate-cover-letter="generateCoverLetter"
+            @retry="retry"
+            @delete="showDeleteConfirm = true"
+          />
         </div>
       </header>
 
@@ -273,34 +254,46 @@ onUnmounted(closeSSE);
     </template>
   </div>
 
-  <DialogRoot :open="showJdModal" @update:open="showJdModal = $event">
-    <DialogPortal>
-      <DialogOverlay class="dialog-overlay" />
-      <DialogContent class="dialog-content jd-dialog-content">
-        <DialogTitle class="dialog-title">Job Description</DialogTitle>
-        <div class="jd-body">{{ store.current?.job_description }}</div>
-        <div class="dialog-actions">
-          <DialogClose class="btn-cancel">Close</DialogClose>
-        </div>
-      </DialogContent>
-    </DialogPortal>
-  </DialogRoot>
+  <BaseDialog
+    :open="showCLModal"
+    title="Cover Letter"
+    width="min(700px, calc(100vw - 32px))"
+    max-height="80vh"
+    :action-label="copied ? 'Copied!' : 'Copy'"
+    @update:open="showCLModal = $event"
+    @action="copyToClipboard"
+  >
+    <div class="jd-body">{{ coverLetter?.content }}</div>
+    <div v-if="coverLetter?.questions?.length" class="cl-questions">
+      <p class="cl-questions__label">To personalise further:</p>
+      <ol class="cl-questions__list">
+        <li v-for="(q, i) in coverLetter.questions" :key="i">{{ q }}</li>
+      </ol>
+    </div>
+  </BaseDialog>
 
-  <DialogRoot :open="showDeleteConfirm" @update:open="showDeleteConfirm = $event">
-    <DialogPortal>
-      <DialogOverlay class="dialog-overlay" />
-      <DialogContent class="dialog-content">
-        <DialogTitle class="dialog-title">Delete application?</DialogTitle>
-        <p class="dialog-body">This cannot be undone.</p>
-        <div class="dialog-actions">
-          <DialogClose class="btn-cancel">Cancel</DialogClose>
-          <button class="btn-delete" :disabled="isDeleting" @click="deleteApp">
-            {{ isDeleting ? "Deleting…" : "Delete" }}
-          </button>
-        </div>
-      </DialogContent>
-    </DialogPortal>
-  </DialogRoot>
+  <BaseDialog
+    :open="showJdModal"
+    title="Job Description"
+    width="min(940px, calc(100vw - 32px))"
+    max-height="80vh"
+    @update:open="showJdModal = $event"
+  >
+    <div class="jd-body">{{ jobDescription }}</div>
+  </BaseDialog>
+
+  <BaseDialog
+    title="Delete application?"
+    :open="showDeleteConfirm"
+    close-label="Cancel"
+    :action-label="isDeleting ? 'Deleting…' : 'Delete'"
+    action-variant="danger"
+    :action-disabled="isDeleting"
+    @update:open="showDeleteConfirm = $event"
+    @action="deleteApp"
+  >
+    <p class="dialog-body">This cannot be undone.</p>
+  </BaseDialog>
 </template>
 
 <style lang="scss" scoped>
@@ -330,6 +323,7 @@ onUnmounted(closeSSE);
 }
 
 .content-main {
+  flex: 1 1 60%;
   min-width: 0;
 }
 
@@ -381,107 +375,25 @@ onUnmounted(closeSSE);
   margin-top: 3px;
 }
 
-.badge {
-  font-size: 11px;
-  font-weight: 500;
-  padding: 3px 8px;
-  border-radius: 99px;
-  background: var(--color-bg-subtle);
+.cl-indicator {
   color: var(--color-text-muted);
-  border: 1px solid var(--color-border);
-  white-space: nowrap;
+  flex-shrink: 0;
 
-  &--ready {
-    color: var(--color-success);
-    border-color: var(--color-success);
-  }
-  &--failed {
-    color: var(--color-danger);
-    border-color: var(--color-danger);
-  }
-  &--pending_approval,
-  &--pending_retry {
-    color: var(--color-warning);
-    border-color: var(--color-warning);
-  }
-  &--analyzing,
-  &--tailoring,
-  &--validating,
-  &--uploaded {
-    color: var(--color-primary);
-    border-color: var(--color-primary);
+  &--done {
+    color: var(--color-success, #22c55e);
   }
 }
 
-.menu-trigger {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 26px;
-  height: 26px;
-  border-radius: var(--radius);
-  border: none;
-  background: transparent;
-  color: var(--color-text-muted);
-  cursor: pointer;
-
-  &:hover {
-    background: var(--color-border);
-    color: var(--color-text);
-  }
-
-  &[data-state="open"] {
-    background: var(--color-border);
-    color: var(--color-text);
-  }
+.cl-indicator-enter-active,
+.cl-indicator-leave-active {
+  transition: opacity 0.2s ease;
 }
 
-.menu-content {
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
-  padding: 4px;
-  min-width: 140px;
-  z-index: 50;
+.cl-indicator-enter-from,
+.cl-indicator-leave-to {
+  opacity: 0;
 }
 
-.menu-separator {
-  height: 1px;
-  background: var(--color-border);
-  margin: 4px 0;
-}
-
-.menu-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 7px 10px;
-  font-size: 13px;
-  border-radius: var(--radius);
-  cursor: pointer;
-  outline: none;
-  color: var(--color-text);
-  user-select: none;
-
-  &[data-highlighted] {
-    background: var(--color-bg-subtle);
-  }
-
-  &[data-disabled] {
-    opacity: 0.4;
-    cursor: default;
-    pointer-events: none;
-  }
-
-  &--danger {
-    color: var(--color-danger);
-
-    &[data-highlighted] {
-      background: color-mix(in srgb, var(--color-danger) 10%, transparent);
-    }
-  }
-}
 
 .pipeline-progress {
   display: flex;
@@ -553,11 +465,6 @@ onUnmounted(closeSSE);
   }
 }
 
-.jd-dialog-content {
-  width: min(640px, calc(100vw - 32px));
-  max-height: 80vh;
-}
-
 .jd-body {
   font-size: 13px;
   color: var(--color-text);
@@ -566,38 +473,12 @@ onUnmounted(closeSSE);
   overflow-y: auto;
   flex: 1;
   min-height: 0;
-  margin: 0;
-}
-
-.dialog-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.4);
-  z-index: 100;
-}
-
-.dialog-content {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  z-index: 101;
-  background: var(--color-surface);
+  margin: 0 5px 0 0;
+  padding: 12px 14px;
+  background: var(--color-bg-subtle);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.16);
-  padding: 24px;
-  width: 320px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.dialog-title {
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--color-text);
-  margin: 0;
+  border-radius: var(--radius-sm);
+  font-family: inherit;
 }
 
 .dialog-body {
@@ -613,36 +494,31 @@ onUnmounted(closeSSE);
   margin-top: 8px;
 }
 
-.btn-cancel {
-  padding: 6px 14px;
-  font-size: 13px;
-  border-radius: var(--radius);
+.cl-questions {
+  padding: 12px 14px;
+  background: var(--color-bg-subtle);
   border: 1px solid var(--color-border);
-  background: var(--color-surface);
-  color: var(--color-text);
-  cursor: pointer;
+  border-radius: var(--radius-sm);
+  font-size: 12px;
 
-  &:hover {
-    background: var(--color-bg-subtle);
-  }
-}
-
-.btn-delete {
-  padding: 6px 14px;
-  font-size: 13px;
-  border-radius: var(--radius);
-  border: none;
-  background: var(--color-danger);
-  color: #fff;
-  cursor: pointer;
-
-  &:hover:not(:disabled) {
-    opacity: 0.88;
+  &__label {
+    font-weight: 600;
+    color: var(--color-text-muted);
+    margin: 0 0 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-size: 11px;
   }
 
-  &:disabled {
-    opacity: 0.5;
-    cursor: default;
+  &__list {
+    margin: 0;
+    padding-left: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    color: var(--color-text);
+    line-height: 1.5;
   }
 }
 </style>
+

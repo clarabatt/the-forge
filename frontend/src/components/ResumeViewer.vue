@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onMounted, ref, watch } from "vue";
 import { useApplicationsStore } from "@/stores/applications";
+import Spinner from "@/components/ui/Spinner.vue";
 
 const props = defineProps<{ applicationId: string }>();
 
@@ -37,14 +38,7 @@ watch(
 <template>
   <div class="resume-paper">
     <div v-if="isLoading" class="resume-loading">
-      <div class="resume-loading-line" style="width: 40%" />
-      <div class="resume-loading-line" style="width: 26%" />
-      <div class="resume-loading-spacer" />
-      <div class="resume-loading-line" style="width: 22%" />
-      <div class="resume-loading-line" />
-      <div class="resume-loading-line" style="width: 55%" />
-      <div class="resume-loading-line" />
-      <div class="resume-loading-line" style="width: 70%" />
+      <Spinner :size="32" />
     </div>
     <div v-else-if="error" class="resume-error">Could not load resume.</div>
     <!-- eslint-disable-next-line vue/no-v-html -->
@@ -59,39 +53,24 @@ watch(
   border-radius: var(--radius-md);
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
   padding: 44px 52px;
-  min-height: 640px;
-  max-width: 900px;
   color: #111;
   font-family: "Georgia", "Times New Roman", serif;
-}
-
-// skeleton loader
-.resume-loading {
   display: flex;
+  flex: 1;
   flex-direction: column;
-  gap: 10px;
-}
-
-.resume-loading-line {
-  height: 10px;
+  align-self: stretch;
+  height: 100%;
+  min-height: 842px;
   width: 100%;
-  background: var(--color-border);
-  border-radius: 4px;
-  animation: shimmer 1.4s ease infinite;
+  max-width: 900px;
 }
 
-.resume-loading-spacer {
-  height: 16px;
-}
-
-@keyframes shimmer {
-  0%,
-  100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.4;
-  }
+.resume-loading {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100%;
 }
 
 .resume-error {

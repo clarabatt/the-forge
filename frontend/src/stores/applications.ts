@@ -24,6 +24,12 @@ export interface Skill {
   rank: number
 }
 
+export interface CoverLetter {
+  content: string
+  created_at: string
+  questions: string[]
+}
+
 export interface AnalysisFeedback {
   overall_assessment: string
   strong_points: string[]
@@ -142,11 +148,30 @@ export const useApplicationsStore = defineStore('applications', () => {
     if (inList) Object.assign(inList, app)
   }
 
+  async function fetchCoverLetter(id: string): Promise<CoverLetter | null> {
+    const res = await fetch(`/api/applications/${id}/cover-letter`, { credentials: 'include' })
+    if (res.status === 404) return null
+    if (!res.ok) throw new Error(`Failed to fetch cover letter (${res.status})`)
+    return res.json()
+  }
+
+  async function generateCoverLetter(id: string): Promise<CoverLetter> {
+    const res = await fetch(`/api/applications/${id}/cover-letter/generate`, {
+      method: 'POST',
+      credentials: 'include',
+    })
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}))
+      throw new Error(body.detail ?? 'Failed to generate cover letter')
+    }
+    return res.json()
+  }
+
   function subscribeToStatus(id: string, onUpdate: (event: MessageEvent) => void): EventSource {
     const es = new EventSource(`/api/applications/${id}/stream`)
     es.addEventListener('status_changed', onUpdate)
     return es
   }
 
-  return { applications, current, isLoading, fetchAll, fetchOne, create, patch, retry, deleteApplication, downloadResume, fetchSkills, fetchResumeHtml, subscribeToStatus }
+  return { applications, current, isLoading, fetchAll, fetchOne, create, patch, retry, deleteApplication, downloadResume, fetchSkills, fetchResumeHtml, fetchCoverLetter, generateCoverLetter, subscribeToStatus }
 })

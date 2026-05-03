@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { DialogClose, DialogContent, DialogOverlay, DialogPortal, DialogRoot, DialogTitle } from 'radix-vue'
 import { useApplicationsStore } from '@/stores/applications'
 import { useResumesStore } from '@/stores/resumes'
+import BaseDialog from '@/components/ui/BaseDialog.vue'
 
 const emit = defineEmits<{ close: [] }>()
 
@@ -40,71 +40,38 @@ async function submit() {
 </script>
 
 <template>
-  <DialogRoot :open="true" @update:open="(v) => !v && emit('close')">
-    <DialogPortal>
-      <DialogOverlay class="modal-overlay" />
-      <DialogContent class="modal-content">
-        <DialogTitle class="modal-title">New Application</DialogTitle>
+  <BaseDialog
+    :open="true"
+    title="New Application"
+    width="min(640px, calc(100vw - 48px))"
+    padding="28px 32px"
+    gap="16px"
+    close-label="Cancel"
+    :close-disabled="isSubmitting"
+    :action-label="isSubmitting ? 'Creating…' : 'Analyze & Create'"
+    :action-disabled="isSubmitting || !jobDescription.trim()"
+    @update:open="(v) => !v && emit('close')"
+    @action="submit"
+  >
+    <p class="modal-description">
+      Paste the job description from LinkedIn or any job board. The AI will extract
+      the company, role, and required skills automatically.
+    </p>
 
-        <p class="modal-description">
-          Paste the job description from LinkedIn or any job board. The AI will extract
-          the company, role, and required skills automatically.
-        </p>
+    <textarea
+      v-model="jobDescription"
+      class="jd-textarea"
+      placeholder="Paste the full job description here…"
+      rows="12"
+      :disabled="isSubmitting"
+      autofocus
+    />
 
-        <textarea
-          v-model="jobDescription"
-          class="jd-textarea"
-          placeholder="Paste the full job description here…"
-          rows="12"
-          :disabled="isSubmitting"
-          autofocus
-        />
-
-        <p v-if="error" class="modal-error">{{ error }}</p>
-
-        <div class="modal-actions">
-          <DialogClose as-child>
-            <button class="btn-cancel" :disabled="isSubmitting">Cancel</button>
-          </DialogClose>
-          <button
-            class="btn-submit"
-            :disabled="isSubmitting || !jobDescription.trim()"
-            @click="submit"
-          >
-            {{ isSubmitting ? 'Creating…' : 'Analyze & Create' }}
-          </button>
-        </div>
-      </DialogContent>
-    </DialogPortal>
-  </DialogRoot>
+    <p v-if="error" class="modal-error">{{ error }}</p>
+  </BaseDialog>
 </template>
 
 <style lang="scss" scoped>
-.modal-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.4);
-  z-index: 300;
-  animation: fadeIn 0.15s ease;
-}
-
-.modal-content {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  z-index: 310;
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.15);
-  padding: 28px 32px;
-  width: min(640px, calc(100vw - 48px));
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  animation: slideIn 0.15s ease;
-}
 
 .modal-title {
   font-size: 17px;
@@ -147,59 +114,6 @@ async function submit() {
   color: var(--color-danger);
 }
 
-.modal-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-}
 
-.btn-cancel {
-  padding: 8px 16px;
-  background: none;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius);
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--color-text);
-  cursor: pointer;
 
-  &:hover:not(:disabled) {
-    background: var(--color-bg-subtle);
-  }
-
-  &:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-}
-
-.btn-submit {
-  padding: 8px 18px;
-  background: var(--color-primary);
-  border: none;
-  border-radius: var(--radius);
-  font-size: 13px;
-  font-weight: 500;
-  color: #fff;
-  cursor: pointer;
-
-  &:hover:not(:disabled) {
-    background: var(--color-primary-hover);
-  }
-
-  &:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-}
-
-@keyframes fadeIn {
-  from { opacity: 0 }
-  to   { opacity: 1 }
-}
-
-@keyframes slideIn {
-  from { opacity: 0; transform: translate(-50%, -48%) }
-  to   { opacity: 1; transform: translate(-50%, -50%) }
-}
 </style>
