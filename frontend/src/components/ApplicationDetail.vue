@@ -285,7 +285,7 @@ onUnmounted(closeSSE);
 
   <BaseDialog
     :open="showJdModal"
-    width="min(640px, calc(100vw - 32px))"
+    width="min(940px, calc(100vw - 32px))"
     max-height="80vh"
     @update:open="showJdModal = $event"
   >
