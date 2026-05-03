@@ -8,6 +8,7 @@ import SkillsTable from "@/components/SkillsTable.vue";
 import { getAppTitle } from "@/utils/application";
 import StatusBadge from "@/components/ui/StatusBadge.vue";
 import BaseDialog from "@/components/ui/BaseDialog.vue";
+import Spinner from "@/components/ui/Spinner.vue";
 
 const route = useRoute();
 const router = useRouter();
@@ -61,6 +62,7 @@ const isRetrying = ref(false);
 const isDeleting = ref(false);
 const isDownloading = ref(false);
 const isGeneratingCL = ref(false);
+const clJustGenerated = ref(false);
 const showDeleteConfirm = ref(false);
 const showJdModal = ref(false);
 const showCLModal = ref(false);
@@ -96,6 +98,8 @@ async function generateCoverLetter() {
   isGeneratingCL.value = true;
   try {
     coverLetter.value = await store.generateCoverLetter(id);
+    clJustGenerated.value = true;
+    setTimeout(() => { clJustGenerated.value = false; }, 2500);
   } finally {
     isGeneratingCL.value = false;
   }
@@ -144,6 +148,21 @@ onUnmounted(closeSSE);
         </div>
         <div class="header-right">
           <StatusBadge :status="store.current.status" />
+          <Transition name="cl-indicator">
+            <Spinner v-if="isGeneratingCL" :size="14" class="cl-indicator" />
+            <svg
+              v-else-if="clJustGenerated"
+              class="cl-indicator cl-indicator--done"
+              width="14"
+              height="14"
+              viewBox="0 0 14 14"
+              fill="none"
+              aria-hidden="true"
+            >
+              <circle cx="7" cy="7" r="6" stroke="currentColor" stroke-width="1.5" />
+              <path d="M4.5 7l2 2 3-3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+          </Transition>
           <ApplicationActionsMenu
             :status="store.current.status"
             :has-feedback="!!store.current.analysis_feedback"
@@ -354,6 +373,25 @@ onUnmounted(closeSSE);
   gap: 8px;
   flex-shrink: 0;
   margin-top: 3px;
+}
+
+.cl-indicator {
+  color: var(--color-text-muted);
+  flex-shrink: 0;
+
+  &--done {
+    color: var(--color-success, #22c55e);
+  }
+}
+
+.cl-indicator-enter-active,
+.cl-indicator-leave-active {
+  transition: opacity 0.2s ease;
+}
+
+.cl-indicator-enter-from,
+.cl-indicator-leave-to {
+  opacity: 0;
 }
 
 

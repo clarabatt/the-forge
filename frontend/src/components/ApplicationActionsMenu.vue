@@ -41,10 +41,23 @@ defineEmits<{
       <DropdownMenuContent class="menu-content" :side-offset="4" align="end">
         <DropdownMenuItem class="menu-item" @select="$emit('view-jd')">
           <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
-            <rect x="2" y="1" width="8" height="10" rx="1" stroke="currentColor" stroke-width="1.5" />
-            <path d="M4 4h4M4 6.5h4M4 9h2.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" />
+            <rect
+              x="2"
+              y="1"
+              width="8"
+              height="10"
+              rx="1"
+              stroke="currentColor"
+              stroke-width="1.5"
+            />
+            <path
+              d="M4 4h4M4 6.5h4M4 9h2.5"
+              stroke="currentColor"
+              stroke-width="1.2"
+              stroke-linecap="round"
+            />
           </svg>
-          View job description
+          Job description
         </DropdownMenuItem>
         <DropdownMenuSeparator class="menu-separator" />
         <DropdownMenuItem v-if="isGeneratingCL" class="menu-item menu-item--loading" disabled>
@@ -57,10 +70,24 @@ defineEmits<{
           @select="$emit('view-cover-letter')"
         >
           <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
-            <rect x="1" y="2.5" width="10" height="7" rx="1" stroke="currentColor" stroke-width="1.5" />
-            <path d="M1 4l5 3.5L11 4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" />
+            <rect
+              x="1"
+              y="2.5"
+              width="10"
+              height="7"
+              rx="1"
+              stroke="currentColor"
+              stroke-width="1.5"
+            />
+            <path
+              d="M1 4l5 3.5L11 4"
+              stroke="currentColor"
+              stroke-width="1.3"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
           </svg>
-          View cover letter
+          Cover letter
         </DropdownMenuItem>
         <DropdownMenuItem
           v-else
@@ -69,7 +96,12 @@ defineEmits<{
           @select="$emit('generate-cover-letter')"
         >
           <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
-            <path d="M6 1v10M1 6h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+            <path
+              d="M6 1v10M1 6h10"
+              stroke="currentColor"
+              stroke-width="1.5"
+              stroke-linecap="round"
+            />
           </svg>
           Generate cover letter
         </DropdownMenuItem>
@@ -80,12 +112,22 @@ defineEmits<{
           @select="$emit('retry')"
         >
           <svg width="12" height="12" viewBox="-2 -2 14 14" fill="none" aria-hidden="true">
-            <path d="M10.5 2A5.5 5.5 0 1 0 11 6.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
-            <path d="M8.5 2H10.5V0" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+            <path
+              d="M10.5 2A5.5 5.5 0 1 0 11 6.5"
+              stroke="currentColor"
+              stroke-width="1.5"
+              stroke-linecap="round"
+            />
+            <path
+              d="M8.5 2H10.5V0"
+              stroke="currentColor"
+              stroke-width="1.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
           </svg>
-          Retry
+          Retry analysis
         </DropdownMenuItem>
-        <DropdownMenuSeparator class="menu-separator" />
         <DropdownMenuItem
           class="menu-item menu-item--danger"
           :disabled="isDeleting"
@@ -100,7 +142,7 @@ defineEmits<{
               stroke-linejoin="round"
             />
           </svg>
-          Delete
+          Delete application
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenuPortal>
