@@ -7,6 +7,7 @@ In dev (DEV_MODE=true) it runs as a FastAPI BackgroundTask.
 import asyncio
 import json
 import logging
+import re
 import uuid
 from concurrent.futures import ThreadPoolExecutor
 
@@ -58,6 +59,24 @@ def _log_usage(
     session.commit()
 
 
+def _skill_matched(jd_name: str, detected: set[str]) -> bool:
+    """Return True if jd_name can be matched against the detected skill set.
+
+    Falls back from exact match → substring containment → token overlap so that
+    composite JD names like "Databases (SQL/NoSQL)" match detected "sql"/"nosql",
+    and expanded forms like "Test-Driven Development" match detected "tdd" when the
+    resume agent emits both forms.
+    """
+    lower = jd_name.lower()
+    if lower in detected:
+        return True
+    for d in detected:
+        if d and d in lower:
+            return True
+    tokens = {t for t in re.split(r"[\s/()\-,./]+", lower) if len(t) > 2}
+    return bool(tokens & detected)
+
+
 def _build_skills(
     app_id: uuid.UUID,
     jd_skills: list[dict],
@@ -72,7 +91,7 @@ def _build_skills(
     skills = []
     for item in jd_skills:
         name = item.get("name", "")
-        found = name.lower() in detected_names
+        found = _skill_matched(name, detected_names)
         skills.append(
             Skill(
                 application_id=app_id,

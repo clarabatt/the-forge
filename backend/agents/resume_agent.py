@@ -39,6 +39,15 @@ Skill extraction guidance for skills_detected:
 - Example: "Led cross-functional Agile teams delivering microservices on Kubernetes"
   → skills_detected: ["Agile", "microservices", "Kubernetes"]
 - If a block mentions no identifiable skill, return [].
+- Acronym expansion: when a skill appears as a common acronym, include BOTH the acronym
+  and its full expanded form so it can be matched against job descriptions that use either form.
+  Examples: "TDD" → ["TDD", "Test-Driven Development"], "BDD" → ["BDD", "Behaviour-Driven Development"],
+  "CI/CD" → ["CI/CD", "Continuous Integration / Continuous Delivery"],
+  "OOP" → ["OOP", "Object-Oriented Programming"], "REST" → ["REST", "REST APIs"],
+  "ML" → ["ML", "Machine Learning"], "AI" → ["AI", "Artificial Intelligence"],
+  "NLP" → ["NLP", "Natural Language Processing"],
+  "AWS" → ["AWS", "Amazon Web Services"], "GCP" → ["GCP", "Google Cloud Platform"],
+  "k8s" → ["k8s", "Kubernetes"], "IaC" → ["IaC", "Infrastructure as Code"].
 
 Rules:
 - If the resume contains a Summary, Professional Summary, Profile, or About section,
