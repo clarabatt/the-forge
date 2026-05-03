@@ -2,8 +2,6 @@
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import {
-  DialogClose,
-  DialogTitle,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuPortal,
@@ -16,7 +14,6 @@ import ResumeViewer from "@/components/ResumeViewer.vue";
 import SkillsTable from "@/components/SkillsTable.vue";
 import { getAppTitle } from "@/utils/application";
 import StatusBadge from "@/components/ui/StatusBadge.vue";
-import BaseButton from "@/components/ui/BaseButton.vue";
 import BaseDialog from "@/components/ui/BaseDialog.vue";
 
 const route = useRoute();
@@ -68,8 +65,8 @@ const isDeleting = ref(false);
 const isDownloading = ref(false);
 const showDeleteConfirm = ref(false);
 const showJdModal = ref(false);
-const jobDescription = computed(() =>
-  store.current?.job_description.replace(/\n{3,}/g, "\n\n").trim() ?? ""
+const jobDescription = computed(
+  () => store.current?.job_description.replace(/\n{3,}/g, "\n\n").trim() ?? "",
 );
 
 async function download(format: "docx" | "pdf") {
@@ -288,26 +285,25 @@ onUnmounted(closeSSE);
 
   <BaseDialog
     :open="showJdModal"
+    title="Job Description"
     width="min(940px, calc(100vw - 32px))"
     max-height="80vh"
     @update:open="showJdModal = $event"
   >
-    <DialogTitle class="dialog-title">Job Description</DialogTitle>
     <div class="jd-body">{{ jobDescription }}</div>
-    <div class="dialog-actions">
-      <DialogClose as-child><BaseButton variant="secondary">Close</BaseButton></DialogClose>
-    </div>
   </BaseDialog>
 
-  <BaseDialog :open="showDeleteConfirm" @update:open="showDeleteConfirm = $event">
-    <DialogTitle class="dialog-title">Delete application?</DialogTitle>
+  <BaseDialog
+    title="Delete application?"
+    :open="showDeleteConfirm"
+    close-label="Cancel"
+    :action-label="isDeleting ? 'Deleting…' : 'Delete'"
+    action-variant="danger"
+    :action-disabled="isDeleting"
+    @update:open="showDeleteConfirm = $event"
+    @action="deleteApp"
+  >
     <p class="dialog-body">This cannot be undone.</p>
-    <div class="dialog-actions">
-      <DialogClose as-child><BaseButton variant="secondary">Cancel</BaseButton></DialogClose>
-      <BaseButton variant="danger" :disabled="isDeleting" @click="deleteApp">
-        {{ isDeleting ? "Deleting…" : "Delete" }}
-      </BaseButton>
-    </div>
   </BaseDialog>
 </template>
 
@@ -538,14 +534,12 @@ onUnmounted(closeSSE);
   overflow-y: auto;
   flex: 1;
   min-height: 0;
-  margin: 0;
-}
-
-.dialog-title {
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--color-text);
-  margin: 0;
+  margin: 0 5px 0 0;
+  padding: 12px 14px;
+  background: var(--color-bg-subtle);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-family: inherit;
 }
 
 .dialog-body {

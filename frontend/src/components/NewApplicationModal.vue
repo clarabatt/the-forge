@@ -1,10 +1,8 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { DialogClose, DialogTitle } from 'radix-vue'
 import { useApplicationsStore } from '@/stores/applications'
 import { useResumesStore } from '@/stores/resumes'
-import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseDialog from '@/components/ui/BaseDialog.vue'
 
 const emit = defineEmits<{ close: [] }>()
@@ -44,13 +42,17 @@ async function submit() {
 <template>
   <BaseDialog
     :open="true"
+    title="New Application"
     width="min(640px, calc(100vw - 48px))"
     padding="28px 32px"
     gap="16px"
+    close-label="Cancel"
+    :close-disabled="isSubmitting"
+    :action-label="isSubmitting ? 'Creating…' : 'Analyze & Create'"
+    :action-disabled="isSubmitting || !jobDescription.trim()"
     @update:open="(v) => !v && emit('close')"
+    @action="submit"
   >
-    <DialogTitle class="modal-title">New Application</DialogTitle>
-
     <p class="modal-description">
       Paste the job description from LinkedIn or any job board. The AI will extract
       the company, role, and required skills automatically.
@@ -66,19 +68,6 @@ async function submit() {
     />
 
     <p v-if="error" class="modal-error">{{ error }}</p>
-
-    <div class="modal-actions">
-      <DialogClose as-child>
-        <BaseButton variant="secondary" :disabled="isSubmitting">Cancel</BaseButton>
-      </DialogClose>
-      <BaseButton
-        variant="primary"
-        :disabled="isSubmitting || !jobDescription.trim()"
-        @click="submit"
-      >
-        {{ isSubmitting ? 'Creating…' : 'Analyze & Create' }}
-      </BaseButton>
-    </div>
   </BaseDialog>
 </template>
 
@@ -125,11 +114,6 @@ async function submit() {
   color: var(--color-danger);
 }
 
-.modal-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-}
 
 
 </style>
