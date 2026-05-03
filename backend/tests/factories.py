@@ -54,6 +54,7 @@ def ApplicationFactory(session: Session, UserFactory):
             application_status=kwargs.get("application_status", ApplicationStatus.applied),
             base_resume_id=kwargs.get("base_resume_id", None),
             retry_count=kwargs.get("retry_count", 0),
+            analysis_feedback=kwargs.get("analysis_feedback", None),
         )
         session.add(app)
         session.commit()
