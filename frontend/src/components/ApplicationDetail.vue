@@ -144,8 +144,21 @@ onUnmounted(closeSSE);
               <DropdownMenuContent class="menu-content" :side-offset="4" align="end">
                 <DropdownMenuItem class="menu-item" @select="showJdModal = true">
                   <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
-                    <rect x="2" y="1" width="8" height="10" rx="1" stroke="currentColor" stroke-width="1.5" />
-                    <path d="M4 4h4M4 6.5h4M4 9h2.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" />
+                    <rect
+                      x="2"
+                      y="1"
+                      width="8"
+                      height="10"
+                      rx="1"
+                      stroke="currentColor"
+                      stroke-width="1.5"
+                    />
+                    <path
+                      d="M4 4h4M4 6.5h4M4 9h2.5"
+                      stroke="currentColor"
+                      stroke-width="1.2"
+                      stroke-linecap="round"
+                    />
                   </svg>
                   View job description
                 </DropdownMenuItem>
@@ -322,6 +335,7 @@ onUnmounted(closeSSE);
 }
 
 .content-main {
+  flex: 1 1 60%;
   min-width: 0;
 }
 
@@ -372,7 +386,6 @@ onUnmounted(closeSSE);
   flex-shrink: 0;
   margin-top: 3px;
 }
-
 
 .menu-trigger {
   display: flex;
@@ -514,7 +527,6 @@ onUnmounted(closeSSE);
   }
 }
 
-
 .jd-body {
   font-size: 13px;
   color: var(--color-text);
@@ -525,7 +537,6 @@ onUnmounted(closeSSE);
   min-height: 0;
   margin: 0;
 }
-
 
 .dialog-title {
   font-size: 15px;
@@ -546,5 +557,4 @@ onUnmounted(closeSSE);
   gap: 8px;
   margin-top: 8px;
 }
-
 </style>
