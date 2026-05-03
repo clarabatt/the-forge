@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onMounted, ref, watch } from "vue";
 import { useApplicationsStore } from "@/stores/applications";
+import ShimmerBlock from "@/components/ui/ShimmerBlock.vue";
 
 const props = defineProps<{ applicationId: string }>();
 
@@ -37,14 +38,14 @@ watch(
 <template>
   <div class="resume-paper">
     <div v-if="isLoading" class="resume-loading">
-      <div class="resume-loading-line" style="width: 40%" />
-      <div class="resume-loading-line" style="width: 26%" />
+      <ShimmerBlock width="40%" :height="10" />
+      <ShimmerBlock width="26%" :height="10" />
       <div class="resume-loading-spacer" />
-      <div class="resume-loading-line" style="width: 22%" />
-      <div class="resume-loading-line" />
-      <div class="resume-loading-line" style="width: 55%" />
-      <div class="resume-loading-line" />
-      <div class="resume-loading-line" style="width: 70%" />
+      <ShimmerBlock width="22%" :height="10" />
+      <ShimmerBlock :height="10" />
+      <ShimmerBlock width="55%" :height="10" />
+      <ShimmerBlock :height="10" />
+      <ShimmerBlock width="70%" :height="10" />
     </div>
     <div v-else-if="error" class="resume-error">Could not load resume.</div>
     <!-- eslint-disable-next-line vue/no-v-html -->
@@ -72,26 +73,8 @@ watch(
   gap: 10px;
 }
 
-.resume-loading-line {
-  height: 10px;
-  width: 100%;
-  background: var(--color-border);
-  border-radius: 4px;
-  animation: shimmer 1.4s ease infinite;
-}
-
 .resume-loading-spacer {
   height: 16px;
-}
-
-@keyframes shimmer {
-  0%,
-  100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.4;
-  }
 }
 
 .resume-error {

@@ -2,6 +2,9 @@
 import { computed, onMounted, ref, watch } from "vue";
 import { marked } from "marked";
 import { useApplicationsStore, type AnalysisFeedback, type Skill } from "@/stores/applications";
+import ProgressBar from "@/components/ui/ProgressBar.vue";
+import ShimmerBlock from "@/components/ui/ShimmerBlock.vue";
+import MatchBadge from "@/components/ui/MatchBadge.vue";
 
 function md(text: string): string {
   return marked.parse(text, { async: false }) as string;
@@ -103,7 +106,7 @@ watch(
     <h2 class="skills-heading">Skills Analysis</h2>
 
     <div v-if="isLoading" class="skills-loading">
-      <div v-for="n in 6" :key="n" class="skills-loading-row" />
+      <ShimmerBlock v-for="n in 6" :key="n" :height="32" />
     </div>
 
     <div v-else-if="error" class="skills-empty">Could not load skills.</div>
@@ -143,29 +146,7 @@ watch(
             <td class="col-skill">{{ skill.skill_name }}</td>
             <td class="col-category">{{ skill.category }}</td>
             <td class="col-match">
-              <span v-if="skill.match_status === 'found_in_resume'" class="badge-found">
-                <svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true">
-                  <path
-                    d="M2 5l2.5 2.5L8 3"
-                    stroke="currentColor"
-                    stroke-width="1.5"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  />
-                </svg>
-                Yes
-              </span>
-              <span v-else class="badge-missing">
-                <svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true">
-                  <path
-                    d="M2.5 2.5l5 5M7.5 2.5l-5 5"
-                    stroke="currentColor"
-                    stroke-width="1.5"
-                    stroke-linecap="round"
-                  />
-                </svg>
-                No
-              </span>
+              <MatchBadge :found="skill.match_status === 'found_in_resume'" />
             </td>
           </tr>
         </tbody>
@@ -216,17 +197,7 @@ watch(
             </span>
           </div>
           <div class="match-bar">
-            <div
-              class="match-bar-fill"
-              :class="
-                feedback.matchPct >= 70
-                  ? 'fill--good'
-                  : feedback.matchPct >= 40
-                    ? 'fill--mid'
-                    : 'fill--low'
-              "
-              :style="{ width: feedback.matchPct + '%' }"
-            />
+            <ProgressBar :pct="feedback.matchPct" color="auto" />
           </div>
 
           <!-- top gaps -->
@@ -348,22 +319,6 @@ export { SortIcon };
   gap: 8px;
 }
 
-.skills-loading-row {
-  height: 32px;
-  background: var(--color-border);
-  border-radius: var(--radius);
-  animation: shimmer 1.4s ease infinite;
-
-  @keyframes shimmer {
-    0%,
-    100% {
-      opacity: 1;
-    }
-    50% {
-      opacity: 0.4;
-    }
-  }
-}
 
 .skills-empty {
   font-size: 13px;
@@ -430,22 +385,6 @@ export { SortIcon };
   width: 20%;
 }
 
-.badge-found,
-.badge-missing {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 12px;
-  font-weight: 500;
-}
-
-.badge-found {
-  color: var(--color-success);
-}
-.badge-missing {
-  color: var(--color-text-muted);
-}
-
 // Feedback panel
 .feedback {
   padding-top: 20px;
@@ -505,27 +444,7 @@ export { SortIcon };
 }
 
 .match-bar {
-  height: 4px;
-  background: var(--color-border);
-  border-radius: 99px;
-  overflow: hidden;
   margin-top: -6px;
-}
-
-.match-bar-fill {
-  height: 100%;
-  border-radius: 99px;
-  transition: width 0.4s ease;
-
-  &.fill--good {
-    background: var(--color-success);
-  }
-  &.fill--mid {
-    background: var(--color-warning);
-  }
-  &.fill--low {
-    background: var(--color-danger);
-  }
 }
 
 .feedback-label {

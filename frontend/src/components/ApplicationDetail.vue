@@ -3,10 +3,6 @@ import { onMounted, onUnmounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import {
   DialogClose,
-  DialogContent,
-  DialogOverlay,
-  DialogPortal,
-  DialogRoot,
   DialogTitle,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -19,6 +15,9 @@ import { PipelineStatus, useApplicationsStore } from "@/stores/applications";
 import ResumeViewer from "@/components/ResumeViewer.vue";
 import SkillsTable from "@/components/SkillsTable.vue";
 import { getAppTitle } from "@/utils/application";
+import StatusBadge from "@/components/ui/StatusBadge.vue";
+import BaseButton from "@/components/ui/BaseButton.vue";
+import BaseDialog from "@/components/ui/BaseDialog.vue";
 
 const route = useRoute();
 const router = useRouter();
@@ -126,9 +125,7 @@ onUnmounted(closeSSE);
           <span class="detail-role">{{ store.current.job_title }}</span>
         </div>
         <div class="header-right">
-          <span class="badge" :class="`badge--${store.current.status.toLowerCase()}`">
-            {{ store.current.status.replace(/_/g, " ") }}
-          </span>
+          <StatusBadge :status="store.current.status" />
           <DropdownMenuRoot>
             <DropdownMenuTrigger class="menu-trigger" aria-label="Application actions">
               <svg
@@ -273,34 +270,29 @@ onUnmounted(closeSSE);
     </template>
   </div>
 
-  <DialogRoot :open="showJdModal" @update:open="showJdModal = $event">
-    <DialogPortal>
-      <DialogOverlay class="dialog-overlay" />
-      <DialogContent class="dialog-content jd-dialog-content">
-        <DialogTitle class="dialog-title">Job Description</DialogTitle>
-        <div class="jd-body">{{ store.current?.job_description }}</div>
-        <div class="dialog-actions">
-          <DialogClose class="btn-cancel">Close</DialogClose>
-        </div>
-      </DialogContent>
-    </DialogPortal>
-  </DialogRoot>
+  <BaseDialog
+    :open="showJdModal"
+    width="min(640px, calc(100vw - 32px))"
+    max-height="80vh"
+    @update:open="showJdModal = $event"
+  >
+    <DialogTitle class="dialog-title">Job Description</DialogTitle>
+    <div class="jd-body">{{ store.current?.job_description }}</div>
+    <div class="dialog-actions">
+      <DialogClose as-child><BaseButton variant="secondary">Close</BaseButton></DialogClose>
+    </div>
+  </BaseDialog>
 
-  <DialogRoot :open="showDeleteConfirm" @update:open="showDeleteConfirm = $event">
-    <DialogPortal>
-      <DialogOverlay class="dialog-overlay" />
-      <DialogContent class="dialog-content">
-        <DialogTitle class="dialog-title">Delete application?</DialogTitle>
-        <p class="dialog-body">This cannot be undone.</p>
-        <div class="dialog-actions">
-          <DialogClose class="btn-cancel">Cancel</DialogClose>
-          <button class="btn-delete" :disabled="isDeleting" @click="deleteApp">
-            {{ isDeleting ? "Deleting…" : "Delete" }}
-          </button>
-        </div>
-      </DialogContent>
-    </DialogPortal>
-  </DialogRoot>
+  <BaseDialog :open="showDeleteConfirm" @update:open="showDeleteConfirm = $event">
+    <DialogTitle class="dialog-title">Delete application?</DialogTitle>
+    <p class="dialog-body">This cannot be undone.</p>
+    <div class="dialog-actions">
+      <DialogClose as-child><BaseButton variant="secondary">Cancel</BaseButton></DialogClose>
+      <BaseButton variant="danger" :disabled="isDeleting" @click="deleteApp">
+        {{ isDeleting ? "Deleting…" : "Delete" }}
+      </BaseButton>
+    </div>
+  </BaseDialog>
 </template>
 
 <style lang="scss" scoped>
@@ -381,37 +373,6 @@ onUnmounted(closeSSE);
   margin-top: 3px;
 }
 
-.badge {
-  font-size: 11px;
-  font-weight: 500;
-  padding: 3px 8px;
-  border-radius: 99px;
-  background: var(--color-bg-subtle);
-  color: var(--color-text-muted);
-  border: 1px solid var(--color-border);
-  white-space: nowrap;
-
-  &--ready {
-    color: var(--color-success);
-    border-color: var(--color-success);
-  }
-  &--failed {
-    color: var(--color-danger);
-    border-color: var(--color-danger);
-  }
-  &--pending_approval,
-  &--pending_retry {
-    color: var(--color-warning);
-    border-color: var(--color-warning);
-  }
-  &--analyzing,
-  &--tailoring,
-  &--validating,
-  &--uploaded {
-    color: var(--color-primary);
-    border-color: var(--color-primary);
-  }
-}
 
 .menu-trigger {
   display: flex;
@@ -553,10 +514,6 @@ onUnmounted(closeSSE);
   }
 }
 
-.jd-dialog-content {
-  width: min(640px, calc(100vw - 32px));
-  max-height: 80vh;
-}
 
 .jd-body {
   font-size: 13px;
@@ -569,29 +526,6 @@ onUnmounted(closeSSE);
   margin: 0;
 }
 
-.dialog-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.4);
-  z-index: 100;
-}
-
-.dialog-content {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  z-index: 101;
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.16);
-  padding: 24px;
-  width: 320px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
 
 .dialog-title {
   font-size: 15px;
@@ -613,36 +547,4 @@ onUnmounted(closeSSE);
   margin-top: 8px;
 }
 
-.btn-cancel {
-  padding: 6px 14px;
-  font-size: 13px;
-  border-radius: var(--radius);
-  border: 1px solid var(--color-border);
-  background: var(--color-surface);
-  color: var(--color-text);
-  cursor: pointer;
-
-  &:hover {
-    background: var(--color-bg-subtle);
-  }
-}
-
-.btn-delete {
-  padding: 6px 14px;
-  font-size: 13px;
-  border-radius: var(--radius);
-  border: none;
-  background: var(--color-danger);
-  color: #fff;
-  cursor: pointer;
-
-  &:hover:not(:disabled) {
-    opacity: 0.88;
-  }
-
-  &:disabled {
-    opacity: 0.5;
-    cursor: default;
-  }
-}
 </style>

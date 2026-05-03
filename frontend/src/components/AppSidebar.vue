@@ -15,6 +15,8 @@ import { PipelineStatus, useApplicationsStore } from "@/stores/applications";
 import { useResumesStore } from "@/stores/resumes";
 import { useAuthStore } from "@/stores/auth";
 import { getAppTitle } from "@/utils/application";
+import ProgressBar from "@/components/ui/ProgressBar.vue";
+import Avatar from "@/components/ui/Avatar.vue";
 
 const props = defineProps<{ mobileOpen?: boolean }>();
 const emit = defineEmits<{ "new-application": []; close: [] }>();
@@ -44,15 +46,6 @@ const selectedResumeId = computed({
   },
 });
 
-const initials = computed(() => {
-  const name = authStore.user?.full_name ?? "";
-  return name
-    .split(" ")
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((w) => w[0]!.toUpperCase())
-    .join("");
-});
 
 const costDisplay = computed(() => {
   const u = authStore.usage;
@@ -280,22 +273,12 @@ const statusColor: Record<PipelineStatus, string> = {
 
     <!-- Fixed footer -->
     <div class="sidebar-footer" :class="{ 'sidebar-footer--collapsed': collapsed }">
-      <div class="avatar">
-        <img
-          v-if="authStore.user?.picture_url"
-          :src="authStore.user.picture_url"
-          :alt="authStore.user.full_name"
-          class="avatar-img"
-        />
-        <span v-else class="avatar-initials">{{ initials }}</span>
-      </div>
+      <Avatar :src="authStore.user?.picture_url" :name="authStore.user?.full_name ?? ''" />
 
       <div v-if="!collapsed && costDisplay" class="footer-cost">
         <span class="cost-label">This month</span>
         <span class="cost-value">${{ costDisplay.current }} / ${{ costDisplay.cap }}</span>
-        <div class="cost-bar">
-          <div class="cost-bar-fill" :style="{ width: costDisplay.pct + '%' }" />
-        </div>
+        <ProgressBar :pct="costDisplay.pct" color="primary" :height="3" />
       </div>
 
       <div ref="menuRef" class="footer-menu">
@@ -595,30 +578,6 @@ const statusColor: Record<PipelineStatus, string> = {
   }
 }
 
-.avatar {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  overflow: hidden;
-  flex-shrink: 0;
-  background: var(--color-primary);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.avatar-img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.avatar-initials {
-  font-size: 12px;
-  font-weight: 600;
-  color: #fff;
-  line-height: 1;
-}
 
 .footer-menu {
   position: relative;
@@ -704,19 +663,6 @@ const statusColor: Record<PipelineStatus, string> = {
   color: var(--color-text);
 }
 
-.cost-bar {
-  height: 3px;
-  background: var(--color-border);
-  border-radius: 99px;
-  overflow: hidden;
-}
-
-.cost-bar-fill {
-  height: 100%;
-  background: var(--color-primary);
-  border-radius: 99px;
-  transition: width 0.4s ease;
-}
 </style>
 
 <!-- Portal-rendered content can't receive scoped styles -->
