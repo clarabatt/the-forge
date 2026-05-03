@@ -245,6 +245,12 @@ onUnmounted(closeSSE);
     @action="copyToClipboard"
   >
     <div class="jd-body">{{ coverLetter?.content }}</div>
+    <div v-if="coverLetter?.questions?.length" class="cl-questions">
+      <p class="cl-questions__label">To personalise further:</p>
+      <ol class="cl-questions__list">
+        <li v-for="(q, i) in coverLetter.questions" :key="i">{{ q }}</li>
+      </ol>
+    </div>
   </BaseDialog>
 
   <BaseDialog
@@ -448,6 +454,33 @@ onUnmounted(closeSSE);
   justify-content: flex-end;
   gap: 8px;
   margin-top: 8px;
+}
+
+.cl-questions {
+  padding: 12px 14px;
+  background: var(--color-bg-subtle);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+
+  &__label {
+    font-weight: 600;
+    color: var(--color-text-muted);
+    margin: 0 0 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-size: 11px;
+  }
+
+  &__list {
+    margin: 0;
+    padding-left: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    color: var(--color-text);
+    line-height: 1.5;
+  }
 }
 </style>
 

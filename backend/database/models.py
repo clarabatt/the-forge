@@ -157,6 +157,7 @@ class CoverLetter(SQLModel, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     application_id: uuid.UUID = Field(foreign_key="applications.id", index=True)
     content: str
+    questions: Optional[str] = None  # JSON array of strings
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
     application: Optional["Application"] = Relationship(back_populates="cover_letter")

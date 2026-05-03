@@ -147,6 +147,7 @@ def run_pipeline(application_id: uuid.UUID) -> None:
             cover_letter = CoverLetter(
                 application_id=app.id,
                 content=cl_result["content"],
+                questions=json.dumps(cl_result["questions"]),
             )
             session.add(cover_letter)
 

@@ -79,6 +79,10 @@ def test_get_cover_letter_returns_404_for_other_users_application(
 
 _MOCK_CL_RESULT = {
     "content": "Generated cover letter content.",
+    "questions": [
+        "Which project at Acme best demonstrates your Python skills?",
+        "Can you quantify an outcome from your last role?",
+    ],
     "usage": {"input_tokens": 100, "output_tokens": 200},
 }
 
@@ -179,3 +183,89 @@ def test_generate_cover_letter_returns_404_for_other_users_application(
     )
 
     assert resp.status_code == 404
+
+
+# --- questions field ---
+
+def test_generate_cover_letter_returns_questions(
+    client: TestClient, UserFactory, ApplicationFactory, SkillFactory, session_cookie
+):
+    user = UserFactory()
+    app = ApplicationFactory(
+        user_id=user.id,
+        status=PipelineStatus.PENDING_APPROVAL,
+        analysis_feedback=_FEEDBACK,
+    )
+    SkillFactory(application_id=app.id)
+
+    with patch("backend.routers.applications.cover_letter_agent.run", return_value=_MOCK_CL_RESULT):
+        resp = client.post(
+            f"/api/applications/{app.id}/cover-letter/generate",
+            cookies={"session": session_cookie(str(user.id))},
+        )
+
+    body = resp.json()
+    assert resp.status_code == 200
+    assert body["questions"] == _MOCK_CL_RESULT["questions"]
+
+
+def test_get_cover_letter_returns_questions(
+    client: TestClient, UserFactory, ApplicationFactory, CoverLetterFactory, session_cookie
+):
+    import json as _json
+    user = UserFactory()
+    app = ApplicationFactory(user_id=user.id)
+    questions = ["Which project best shows your Python skills?", "Can you add a metric?"]
+    CoverLetterFactory(application_id=app.id, questions=_json.dumps(questions))
+
+    resp = client.get(
+        f"/api/applications/{app.id}/cover-letter",
+        cookies={"session": session_cookie(str(user.id))},
+    )
+
+    assert resp.status_code == 200
+    assert resp.json()["questions"] == questions
+
+
+def test_get_cover_letter_returns_empty_questions_when_none_stored(
+    client: TestClient, UserFactory, ApplicationFactory, CoverLetterFactory, session_cookie
+):
+    user = UserFactory()
+    app = ApplicationFactory(user_id=user.id)
+    CoverLetterFactory(application_id=app.id, questions=None)
+
+    resp = client.get(
+        f"/api/applications/{app.id}/cover-letter",
+        cookies={"session": session_cookie(str(user.id))},
+    )
+
+    assert resp.status_code == 200
+    assert resp.json()["questions"] == []
+
+
+def test_generate_cover_letter_updates_questions_on_regenerate(
+    client: TestClient, UserFactory, ApplicationFactory, CoverLetterFactory, session_cookie
+):
+    import json as _json
+    user = UserFactory()
+    app = ApplicationFactory(
+        user_id=user.id,
+        status=PipelineStatus.READY,
+        analysis_feedback=_FEEDBACK,
+    )
+    CoverLetterFactory(
+        application_id=app.id,
+        content="Old content.",
+        questions=_json.dumps(["Old question?"]),
+    )
+
+    with patch("backend.routers.applications.cover_letter_agent.run", return_value=_MOCK_CL_RESULT):
+        resp = client.post(
+            f"/api/applications/{app.id}/cover-letter/generate",
+            cookies={"session": session_cookie(str(user.id))},
+        )
+
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["content"] == "Generated cover letter content."
+    assert body["questions"] == _MOCK_CL_RESULT["questions"]

@@ -20,7 +20,10 @@ Given the job details and the candidate's resume, write a cover letter draft.
 
 Return ONLY valid JSON matching this exact schema:
 {
-  "content": "<full cover letter text, plain text, newlines allowed>"
+  "content": "<full cover letter text, plain text, newlines allowed>",
+  "questions": [
+    "<specific provocation to help the candidate personalise the letter further>"
+  ]
 }
 
 Structure the letter as follows (plain text, no markdown):
@@ -35,13 +38,25 @@ Structure the letter as follows (plain text, no markdown):
 4. Closing paragraph (2 sentences): Express clear interest, invite next steps. Do not say
    "thank you for your time and consideration" — be direct.
 
-Rules:
+Rules for content:
 - Do NOT fabricate experience, skills, or metrics not present in the resume blocks.
 - Do NOT use bullet points or headers — flowing paragraphs only.
 - Do NOT mention missing skills or weaknesses.
 - Keep the letter under 350 words.
 - Address it generically (no "Dear Hiring Manager") — omit the salutation entirely.
 - Omit the date and address block — start directly with the opening paragraph.
+
+Rules for questions:
+- Write exactly 3–4 questions, no more.
+- Every question must reference something specific from the resume or the job description
+  (an employer name, a skill, a job title, a product area — never speak in generalities).
+- Each question should prompt the candidate to add a named project, a concrete metric,
+  an anecdote, or a specific outcome that would make the letter less generic.
+- Frame them as provocations, not instructions. Good example:
+  "Your resume mentions improving performance at [Employer] — what was the actual
+  percentage or time saved? Adding that number to paragraph 2 would make it memorable."
+  Bad example: "Add metrics to your bullet points."
+- Do NOT ask about skills not in the resume or requirements not in the JD.
 """
 
 
@@ -87,6 +102,7 @@ def run(
 
     return {
         "content": result.get("content", ""),
+        "questions": result.get("questions", []),
         "usage": {
             "input_tokens": response.usage_metadata.prompt_token_count or 0,
             "output_tokens": response.usage_metadata.candidates_token_count or 0,

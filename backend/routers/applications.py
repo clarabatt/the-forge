@@ -264,10 +264,15 @@ def generate_cover_letter(
     existing = cl_repo.get_by_application(application_id)
     if existing:
         existing.content = cl_result["content"]
+        existing.questions = json.dumps(cl_result["questions"])
         existing.created_at = datetime.now(timezone.utc)
         session.add(existing)
     else:
-        session.add(CoverLetter(application_id=application_id, content=cl_result["content"]))
+        session.add(CoverLetter(
+            application_id=application_id,
+            content=cl_result["content"],
+            questions=json.dumps(cl_result["questions"]),
+        ))
 
     log = LlmUsageLog(
         user_id=user.id,
@@ -281,7 +286,11 @@ def generate_cover_letter(
     session.commit()
 
     cl = cl_repo.get_by_application(application_id)
-    return {"content": cl.content, "created_at": cl.created_at}
+    return {
+        "content": cl.content,
+        "created_at": cl.created_at,
+        "questions": json.loads(cl.questions or "[]"),
+    }
 
 
 @router.get("/{application_id}/cover-letter")
@@ -296,7 +305,11 @@ def get_cover_letter(
     cl = CoverLetterRepository(session).get_by_application(application_id)
     if not cl:
         raise HTTPException(status_code=404, detail="Cover letter not yet available")
-    return {"content": cl.content, "created_at": cl.created_at}
+    return {
+        "content": cl.content,
+        "created_at": cl.created_at,
+        "questions": json.loads(cl.questions or "[]"),
+    }
 
 
 @router.get("/{application_id}/resume-html")

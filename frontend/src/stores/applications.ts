@@ -27,6 +27,7 @@ export interface Skill {
 export interface CoverLetter {
   content: string
   created_at: string
+  questions: string[]
 }
 
 export interface AnalysisFeedback {

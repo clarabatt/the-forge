@@ -157,6 +157,7 @@ def CoverLetterFactory(session: Session, ApplicationFactory):
         cl = CoverLetter(
             application_id=kwargs["application_id"],
             content=kwargs.get("content", "Dear Hiring Manager, I am writing to express my interest…"),
+            questions=kwargs.get("questions", None),
         )
         session.add(cl)
         session.commit()
