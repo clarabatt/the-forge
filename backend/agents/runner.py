@@ -14,7 +14,7 @@ from concurrent.futures import ThreadPoolExecutor
 
 from sqlmodel import Session
 
-from backend.agents import cover_letter_agent, feedback_agent, jd_agent, resume_agent
+from backend.agents import cover_letter_agent, feedback_agent, jd_agent, resume_agent, skill_verifier_agent
 from backend.config import settings
 from backend.database.models import (
     AgentName,
@@ -163,8 +163,26 @@ def run_pipeline(application_id: uuid.UUID) -> None:
             app.company_name = jd_result["company_name"]
             app.job_title = jd_result["job_title"]
 
-            # persist skills
+            # build initial skill matches using heuristic confidence scoring
             skills = _build_skills(app.id, jd_result["skills"], resume_result["blocks"])
+
+            # verify matched skills against actual resume text to eliminate false positives
+            found_skills = [s for s in skills if s.match_status == SkillMatchStatus.found_in_resume]
+            if found_skills:
+                verify_result = skill_verifier_agent.run(
+                    skills_to_verify=[s.skill_name for s in found_skills],
+                    resume_blocks=resume_result["blocks"],
+                )
+                verified_set = {
+                    v["skill_name"].lower()
+                    for v in verify_result["verifications"]
+                    if v.get("verified")
+                }
+                for skill in found_skills:
+                    if skill.skill_name.lower() not in verified_set:
+                        skill.match_status = SkillMatchStatus.missing
+                _log_usage(session, app, AgentName.SKILL_VERIFIER, verify_result["usage"])
+
             for skill in skills:
                 session.add(skill)
 

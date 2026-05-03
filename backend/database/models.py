@@ -46,6 +46,7 @@ class AgentName(str, Enum):
     DIFF = "DIFF"
     JUDGE_RETRY = "JUDGE_RETRY"
     COVER_LETTER = "COVER_LETTER"
+    SKILL_VERIFIER = "SKILL_VERIFIER"
 
 
 class ChatRole(str, Enum):
