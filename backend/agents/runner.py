@@ -12,11 +12,12 @@ from concurrent.futures import ThreadPoolExecutor
 
 from sqlmodel import Session
 
-from backend.agents import feedback_agent, jd_agent, resume_agent
+from backend.agents import cover_letter_agent, feedback_agent, jd_agent, resume_agent
 from backend.config import settings
 from backend.database.models import (
     AgentName,
     Application,
+    CoverLetter,
     LlmUsageLog,
     PipelineStatus,
     Skill,
@@ -135,10 +136,25 @@ def run_pipeline(application_id: uuid.UUID) -> None:
                 "recommended_changes": feedback_result["recommended_changes"],
             })
 
+            # cover letter agent — uses feedback strong points + skills + resume blocks
+            cl_result = cover_letter_agent.run(
+                company_name=jd_result["company_name"],
+                job_title=jd_result["job_title"],
+                skills=jd_result["skills"],
+                resume_blocks=resume_result["blocks"],
+                feedback=feedback_result,
+            )
+            cover_letter = CoverLetter(
+                application_id=app.id,
+                content=cl_result["content"],
+            )
+            session.add(cover_letter)
+
             # log usage
             _log_usage(session, app, AgentName.JD, jd_result["usage"])
             _log_usage(session, app, AgentName.RESUME, resume_result["usage"])
             _log_usage(session, app, AgentName.DIFF, feedback_result["usage"])
+            _log_usage(session, app, AgentName.COVER_LETTER, cl_result["usage"])
 
             _transition(session, app, PipelineStatus.PENDING_APPROVAL)
 

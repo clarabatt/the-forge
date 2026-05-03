@@ -10,6 +10,7 @@ from backend.database.models import (
     ApplicationStatus,
     ChatMessage,
     ChatRole,
+    CoverLetter,
     LlmUsageLog,
     OAuthState,
     PipelineStatus,
@@ -143,6 +144,23 @@ def OAuthStateFactory(session: Session):
         session.commit()
         session.refresh(state)
         return state
+
+    return factory
+
+
+@pytest.fixture
+def CoverLetterFactory(session: Session, ApplicationFactory):
+    def factory(**kwargs) -> CoverLetter:
+        if "application_id" not in kwargs:
+            kwargs["application_id"] = ApplicationFactory().id
+        cl = CoverLetter(
+            application_id=kwargs["application_id"],
+            content=kwargs.get("content", "Dear Hiring Manager, I am writing to express my interest…"),
+        )
+        session.add(cl)
+        session.commit()
+        session.refresh(cl)
+        return cl
 
     return factory
 

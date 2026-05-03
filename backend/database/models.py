@@ -45,6 +45,7 @@ class AgentName(str, Enum):
     RESUME = "RESUME"
     DIFF = "DIFF"
     JUDGE_RETRY = "JUDGE_RETRY"
+    COVER_LETTER = "COVER_LETTER"
 
 
 class ChatRole(str, Enum):
@@ -90,6 +91,7 @@ class Application(SQLModel, table=True):
     skills: list["Skill"] = Relationship(back_populates="application")
     llm_usage_logs: list["LlmUsageLog"] = Relationship(back_populates="application")
     chat_messages: list["ChatMessage"] = Relationship(back_populates="application")
+    cover_letter: Optional["CoverLetter"] = Relationship(back_populates="application")
 
 
 class Resume(SQLModel, table=True):
@@ -147,6 +149,17 @@ class OAuthState(SQLModel, table=True):
 
     state: str = Field(primary_key=True)
     expires_at: datetime
+
+
+class CoverLetter(SQLModel, table=True):
+    __tablename__ = "cover_letters"
+
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    application_id: uuid.UUID = Field(foreign_key="applications.id", index=True)
+    content: str
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+    application: Optional["Application"] = Relationship(back_populates="cover_letter")
 
 
 class ChatMessage(SQLModel, table=True):

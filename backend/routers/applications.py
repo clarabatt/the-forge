@@ -15,8 +15,8 @@ from sqlmodel import Session, delete
 
 from backend.auth import get_current_user
 from backend.config import settings
-from backend.database.models import Application, ApplicationStatus, PipelineStatus, Resume, Skill, User
-from backend.database.repositories import ApplicationRepository, SkillRepository
+from backend.database.models import Application, ApplicationStatus, CoverLetter, PipelineStatus, Resume, Skill, User
+from backend.database.repositories import ApplicationRepository, CoverLetterRepository, SkillRepository
 from backend.database.session import get_session
 from backend.gcs import download_bytes
 
@@ -218,6 +218,21 @@ def download_pdf(
         media_type="application/pdf",
         headers={"Content-Disposition": f'attachment; filename="{pdf_name}"'},
     )
+
+
+@router.get("/{application_id}/cover-letter")
+def get_cover_letter(
+    application_id: uuid.UUID,
+    session: Session = Depends(get_session),
+    user: User = Depends(get_current_user),
+):
+    repo = ApplicationRepository(session)
+    if not repo.get_by_user_and_id(user.id, application_id):
+        raise HTTPException(status_code=404, detail="Application not found")
+    cl = CoverLetterRepository(session).get_by_application(application_id)
+    if not cl:
+        raise HTTPException(status_code=404, detail="Cover letter not yet available")
+    return {"content": cl.content, "created_at": cl.created_at}
 
 
 @router.get("/{application_id}/resume-html")
