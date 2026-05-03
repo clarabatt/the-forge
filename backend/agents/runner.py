@@ -103,11 +103,6 @@ def _skill_confidence(jd_name: str, detected_counts: dict[str, int]) -> float:
     return best
 
 
-def _skill_matched(jd_name: str, detected: set[str]) -> bool:
-    """Return True if jd_name matches the detected skill set with sufficient confidence."""
-    return _skill_confidence(jd_name, {s: 1 for s in detected}) >= MATCH_CONFIDENCE_THRESHOLD
-
-
 def _build_skills(
     app_id: uuid.UUID,
     jd_skills: list[dict],
