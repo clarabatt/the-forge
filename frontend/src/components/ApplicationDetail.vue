@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref, watch } from "vue";
+import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import {
   DialogClose,
@@ -68,6 +68,9 @@ const isDeleting = ref(false);
 const isDownloading = ref(false);
 const showDeleteConfirm = ref(false);
 const showJdModal = ref(false);
+const jobDescription = computed(() =>
+  store.current?.job_description.replace(/\n{3,}/g, "\n\n").trim() ?? ""
+);
 
 async function download(format: "docx" | "pdf") {
   const id = route.params.id as string;
@@ -290,7 +293,7 @@ onUnmounted(closeSSE);
     @update:open="showJdModal = $event"
   >
     <DialogTitle class="dialog-title">Job Description</DialogTitle>
-    <div class="jd-body">{{ store.current?.job_description }}</div>
+    <div class="jd-body">{{ jobDescription }}</div>
     <div class="dialog-actions">
       <DialogClose as-child><BaseButton variant="secondary">Close</BaseButton></DialogClose>
     </div>
