@@ -73,7 +73,7 @@ def run(
         "role": f"{job_title} at {company_name}",
         "top_required_skills": [
             {"name": s["name"], "category": s.get("category"), "rank": s.get("rank")}
-            for s in sorted(skills, key=lambda x: x.get("rank", 99))[:10]
+            for s in sorted(skills, key=lambda x: (not x.get("required", True), x.get("rank", 99)))[:10]
         ],
         "resume_blocks": [
             {

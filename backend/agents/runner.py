@@ -127,6 +127,7 @@ def _build_skills(
                 match_status=SkillMatchStatus.found_in_resume if found else SkillMatchStatus.missing,
                 ai_confidence=float(item.get("confidence", 0.5)),
                 rank=int(item.get("rank", 99)),
+                required=bool(item.get("required", True)),
             )
         )
     return skills

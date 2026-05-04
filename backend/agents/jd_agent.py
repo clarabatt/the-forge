@@ -22,19 +22,26 @@ Return ONLY valid JSON matching this exact schema:
       "name": "<skill name>",
       "category": "<Hard Skill | Soft Skill | Tool | Domain Knowledge>",
       "confidence": <float 0.0–1.0>,
-      "rank": <integer, 1 = most critical>
+      "rank": <integer, 1 = most critical>,
+      "required": <true | false>
     }
-  ],
-  "vibe_check": "<2–3 sentence description of company culture and what the role values>",
-  "must_have_count": <integer — how many top-ranked skills are truly non-negotiable>
+  ]
 }
 
 Rules:
-- Extract up to 10 skills, ranked by criticality to the role.
+- Extract up to 20 skills, ranked by criticality to the role.
 - confidence reflects how explicitly the skill is emphasised in the JD.
-- must_have_count is typically 3–6.
+- required: true for skills in sections labelled "Required", "Must have", "Essential",
+  "Minimum qualifications", or stated as mandatory. false for skills in sections labelled
+  "Preferred", "Nice to have", "Bonus", "Plus", "Asset", or "Desired". When no section
+  labels are present, use your judgment: core technical skills for the role are required,
+  supplementary or domain-adjacent skills are preferred.
 - company_name and job_title must come from the JD text, not be inferred.
-- Only include Soft Skills that are explicitly stated in the JD text (e.g. "excellent communication skills", "team player", "leadership"). Do NOT infer or assume soft skills from the role type or industry — if the JD does not say it, do not add it.
+- Deduplicate: if the same skill appears under different names or in multiple sections,
+  emit it only once using the most canonical name. Merge acronym and expansion into one entry.
+- Only include Soft Skills that are explicitly stated in the JD text (e.g. "excellent
+  communication skills", "team player", "leadership"). Do NOT infer soft skills from the
+  role type or industry.
 - Acronym handling: always expand acronyms to their full, canonical skill name.
   Common examples: MO → Microsoft Office, MS → Microsoft Suite, PP → PowerPoint,
   XL/Excel → Microsoft Excel, GS → Google Sheets, CRM → Customer Relationship Management,
@@ -66,8 +73,6 @@ def run(job_description: str) -> dict:
         "company_name": result.get("company_name", "Unknown Company"),
         "job_title": result.get("job_title", "Unknown Role"),
         "skills": result.get("skills", []),
-        "vibe_check": result.get("vibe_check", ""),
-        "must_have_count": result.get("must_have_count", 0),
         "usage": {
             "input_tokens": response.usage_metadata.prompt_token_count or 0,
             "output_tokens": response.usage_metadata.candidates_token_count or 0,
