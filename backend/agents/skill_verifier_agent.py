@@ -14,14 +14,15 @@ _SYSTEM_PROMPT = """\
 You are a strict resume auditor. An automated system has scanned a resume and flagged a list
 of skills as "found". Your job is to verify each one by reading the actual resume text.
 
-A skill is verified ONLY if the candidate demonstrably has it — they used it in a project,
-listed it in a skills section, or described work that clearly relies on it.
+A skill is verified if ANY of the following is true:
+- It appears in a block with type "skills_list" — the candidate explicitly listed it as a skill.
+- It appears in an accomplishment or summary block in a context that implies actual use or knowledge.
 
-Reject a skill if:
+Reject a skill only if:
 - The only evidence is a word that coincidentally overlaps (e.g. "learning" in "e-learning",
   "rest" in "rest of the team", "go" in "go-to-market").
-- The skill appears only as part of an unrelated compound phrase.
-- There is no concrete evidence of actual use or knowledge.
+- The skill appears solely as part of an unrelated compound phrase with no skills_list entry.
+- There is genuinely no evidence of actual use or knowledge anywhere in the resume.
 
 Return ONLY valid JSON:
 {
@@ -50,6 +51,7 @@ def run(skills_to_verify: list[str], resume_blocks: list[dict]) -> dict:
         "skills_to_verify": skills_to_verify,
         "resume": [
             {
+                "type": b.get("type", "accomplishment"),
                 "employer": b.get("employer"),
                 "date_range": b.get("date_range"),
                 "text": b["text"],

@@ -12,15 +12,16 @@ from backend.config import settings
 logger = logging.getLogger(__name__)
 
 _SYSTEM_PROMPT = """\
-You are a resume parser. Given plain-text resume content, extract the summary section
-and every accomplishment or responsibility bullet point into structured blocks.
+You are a resume parser. Given plain-text resume content, extract the summary section,
+every accomplishment or responsibility bullet point, and any skills inventory section
+into structured blocks.
 
 Return ONLY valid JSON matching this exact schema:
 {
   "blocks": [
     {
       "id": "<uuid string>",
-      "type": "summary | accomplishment",
+      "type": "summary | accomplishment | skills_list",
       "text": "<exact text as written>",
       "employer": "<company or institution name, or null>",
       "date_range": "<date range string as written, or null>",
@@ -53,8 +54,13 @@ Rules:
 - If the resume contains a Summary, Professional Summary, Profile, or About section,
   extract the entire paragraph text as ONE block with type "summary".
   employer and date_range must be null for summary blocks.
-- Skip navigation headings only (Experience, Education, Skills, Certifications, etc.)
-  and contact info lines. Do NOT skip summary or profile paragraph content.
+- If the resume contains a Skills, Technical Skills, Core Competencies, Technologies,
+  or similar inventory section (a flat list, comma-separated list, or grouped list of
+  skill names), extract it as ONE block with type "skills_list". Set employer and
+  date_range to null. Set skills_detected to every individual skill name in the list.
+  Do NOT skip this section — it is the most direct source of verified skills.
+- Skip only the bare section heading lines (e.g. the word "Experience", "Education",
+  "Certifications" standing alone) and contact info lines. Never skip section content.
 - Preserve the exact wording of each bullet — never paraphrase.
 - One block per bullet point or sentence of substance.
 - Generate a fresh UUID (v4 format) for each block id.
