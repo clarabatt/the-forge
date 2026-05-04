@@ -16,7 +16,7 @@ class Settings(BaseSettings):
 
     anthropic_api_key: str = ""
     gemini_api_key: str = ""
-    gemini_model: str = "gemini-2.5-flash"
+    gemini_model: str = "gemini-3-flash-preview"
 
     monthly_cost_cap_usd: float = 5.00
     burst_limit_runs: int = 3

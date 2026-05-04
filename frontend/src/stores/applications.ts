@@ -22,6 +22,7 @@ export interface Skill {
   match_status: SkillMatchStatus
   ai_confidence: number
   rank: number
+  required: boolean
 }
 
 export interface CoverLetter {

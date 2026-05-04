@@ -46,6 +46,7 @@ class AgentName(str, Enum):
     DIFF = "DIFF"
     JUDGE_RETRY = "JUDGE_RETRY"
     COVER_LETTER = "COVER_LETTER"
+    SKILL_VERIFIER = "SKILL_VERIFIER"
 
 
 class ChatRole(str, Enum):
@@ -124,6 +125,7 @@ class Skill(SQLModel, table=True):
     user_action: Optional[SkillUserAction] = None
     ai_confidence: float = Field(default=0.0, ge=0.0, le=1.0)
     rank: int
+    required: bool = Field(default=True)
 
     application: Optional[Application] = Relationship(back_populates="skills")
 

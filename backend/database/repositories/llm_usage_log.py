@@ -41,3 +41,19 @@ class LlmUsageLogRepository(BaseRepository[LlmUsageLog, uuid.UUID]):
             )
         ).one()
         return result[0], result[1]
+
+    def get_monthly_tokens_by_model(
+        self, user_id: uuid.UUID, since: datetime
+    ) -> list[tuple[str, int, int]]:
+        """Returns [(model, input_tokens, output_tokens)] grouped by model since `since`."""
+        rows = self.session.exec(
+            select(
+                LlmUsageLog.model,
+                func.coalesce(func.sum(LlmUsageLog.input_tokens), 0),
+                func.coalesce(func.sum(LlmUsageLog.output_tokens), 0),
+            ).where(
+                LlmUsageLog.user_id == user_id,
+                LlmUsageLog.created_at >= since,
+            ).group_by(LlmUsageLog.model)
+        ).all()
+        return [(row[0], int(row[1]), int(row[2])) for row in rows]

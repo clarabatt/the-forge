@@ -30,14 +30,18 @@ Return ONLY valid JSON matching this exact schema:
 Rules:
 - strong_points: only list genuine strengths directly relevant to this JD. If there are none, return [].
 - weak_points: be specific. Reference the actual text of the weak bullet if possible.
+  Prioritise missing required skills over missing preferred skills — a required skill gap
+  is a dealbreaker, a preferred skill gap is a weakness.
 - recommended_changes: give exact rewrites or concrete examples, not vague advice.
+  When a required skill is missing from the resume, explicitly name it and suggest how to
+  surface any adjacent experience. Do not soften this — the candidate needs to know.
 - Do not pad the lists. 3-5 items per list is enough.
 - Look for a block with "type": "summary" or equivalent in resume_blocks.
   - If one exists: you MUST include at least one recommended_change addressing it directly.
     Quote the exact summary text. Critique whether it is tailored to this specific role,
     too generic, or missing key qualifiers.
   - If none exists: include one recommended_change telling the candidate to write a
-    2–3 sentence summary targeting this specific role and company. Give an example of what that 
+    2–3 sentence summary targeting this specific role and company. Give an example of what that
     summary should say, using the candidate's existing experience and the job description as context.
 """
 
@@ -54,7 +58,11 @@ def run(
         "role": f"{job_title} at {company_name}",
         "required_skills": [
             {"name": s["name"], "category": s.get("category"), "rank": s.get("rank")}
-            for s in skills
+            for s in skills if s.get("required", True)
+        ],
+        "preferred_skills": [
+            {"name": s["name"], "category": s.get("category"), "rank": s.get("rank")}
+            for s in skills if not s.get("required", True)
         ],
         "resume_blocks": [
             {

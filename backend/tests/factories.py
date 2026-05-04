@@ -101,6 +101,7 @@ def SkillFactory(session: Session, ApplicationFactory):
             ai_confidence=kwargs.get("ai_confidence", 0.9),
             rank=kwargs.get("rank", 1),
             user_action=kwargs.get("user_action", None),
+            required=kwargs.get("required", True),
         )
         session.add(skill)
         session.commit()

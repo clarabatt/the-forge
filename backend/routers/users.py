@@ -8,12 +8,9 @@ from backend.config import settings
 from backend.database.models import User
 from backend.database.repositories import LlmUsageLogRepository
 from backend.database.session import get_session
+from backend.pricing import token_cost
 
 router = APIRouter()
-
-# Gemini 2.5 Flash pricing (USD per token)
-_INPUT_PRICE_PER_TOKEN = 0.15 / 1_000_000
-_OUTPUT_PRICE_PER_TOKEN = 0.60 / 1_000_000
 
 
 @router.get("/me")
@@ -36,10 +33,12 @@ def get_usage(
     now = datetime.now(timezone.utc)
     month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
     repo = LlmUsageLogRepository(session)
-    input_tokens, output_tokens = repo.get_monthly_token_totals(user.id, month_start)
-    cost_usd = input_tokens * _INPUT_PRICE_PER_TOKEN + output_tokens * _OUTPUT_PRICE_PER_TOKEN
+    breakdown = repo.get_monthly_tokens_by_model(user.id, month_start)
+    cost_usd = sum(token_cost(model, inp, out) for model, inp, out in breakdown)
+    input_tokens = sum(inp for _, inp, _ in breakdown)
+    output_tokens = sum(out for _, _, out in breakdown)
     return {
-        "cost_usd": round(cost_usd, 4),
+        "cost_usd": round(cost_usd, 6),
         "monthly_cap_usd": settings.monthly_cost_cap_usd,
         "input_tokens": input_tokens,
         "output_tokens": output_tokens,

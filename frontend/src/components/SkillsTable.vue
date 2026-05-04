@@ -52,25 +52,11 @@ const sortedSkills = computed(() =>
 
 const feedback = computed(() => {
   if (!skills.value.length) return null;
-
   const total = skills.value.length;
   const found = skills.value.filter((s) => s.match_status === "found_in_resume").length;
-  const missing = skills.value.filter((s) => s.match_status === "missing");
   const matchPct = Math.round((found / total) * 100);
-
-  // top missing skills ordered by rank (lower rank = more critical)
-  const topGaps = [...missing].sort((a, b) => a.rank - b.rank).slice(0, 3);
-
-  // missing count per category
-  const byCategory = missing.reduce<Record<string, number>>((acc, s) => {
-    acc[s.category] = (acc[s.category] ?? 0) + 1;
-    return acc;
-  }, {});
-
-  return { found, total, matchPct, topGaps, byCategory };
+  return { found, total, matchPct };
 });
-
-const feedbackOpen = ref(true);
 
 const aiFeedback = computed((): AnalysisFeedback | null => {
   const raw = store.current?.analysis_feedback;
@@ -114,6 +100,26 @@ watch(
     <div v-else-if="skills.length === 0" class="skills-empty">No skills recorded.</div>
 
     <template v-else>
+      <!-- match bar -->
+      <div v-if="feedback" class="match-bar-row">
+        <span class="match-label">{{ feedback.found }} / {{ feedback.total }} skills matched</span>
+        <span
+          class="match-pct"
+          :class="
+            feedback.matchPct >= 70
+              ? 'match-pct--good'
+              : feedback.matchPct >= 40
+                ? 'match-pct--mid'
+                : 'match-pct--low'
+          "
+        >
+          {{ feedback.matchPct }}%
+        </span>
+      </div>
+      <div v-if="feedback" class="match-bar">
+        <ProgressBar :pct="feedback.matchPct" color="auto" />
+      </div>
+
       <table class="skills-table">
         <thead>
           <tr>
@@ -151,82 +157,6 @@ watch(
           </tr>
         </tbody>
       </table>
-
-      <!-- Feedback panel -->
-      <div v-if="feedback" class="feedback">
-        <button class="feedback-toggle" @click="feedbackOpen = !feedbackOpen">
-          <span class="feedback-heading">What to improve</span>
-          <svg
-            width="12"
-            height="12"
-            viewBox="0 0 12 12"
-            fill="none"
-            aria-hidden="true"
-            :style="{
-              transform: feedbackOpen ? 'rotate(180deg)' : 'rotate(0deg)',
-              transition: 'transform 0.2s ease',
-            }"
-          >
-            <path
-              d="M2 4l4 4 4-4"
-              stroke="currentColor"
-              stroke-width="1.5"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            />
-          </svg>
-        </button>
-
-        <template v-if="feedbackOpen">
-          <!-- match bar -->
-          <div class="match-bar-row">
-            <span class="match-label"
-              >{{ feedback.found }} / {{ feedback.total }} skills matched</span
-            >
-            <span
-              class="match-pct"
-              :class="
-                feedback.matchPct >= 70
-                  ? 'match-pct--good'
-                  : feedback.matchPct >= 40
-                    ? 'match-pct--mid'
-                    : 'match-pct--low'
-              "
-            >
-              {{ feedback.matchPct }}%
-            </span>
-          </div>
-          <div class="match-bar">
-            <ProgressBar :pct="feedback.matchPct" color="auto" />
-          </div>
-
-          <!-- top gaps -->
-          <template v-if="feedback.topGaps.length">
-            <p class="feedback-label">Top gaps to address</p>
-            <ul class="gap-list">
-              <li v-for="s in feedback.topGaps" :key="s.id" class="gap-item">
-                <span class="gap-name">{{ s.skill_name }}</span>
-                <span class="gap-cat">{{ s.category }}</span>
-              </li>
-            </ul>
-          </template>
-
-          <!-- category breakdown -->
-          <template v-if="Object.keys(feedback.byCategory).length">
-            <p class="feedback-label">Missing by category</p>
-            <ul class="category-list">
-              <li v-for="(count, cat) in feedback.byCategory" :key="cat" class="category-item">
-                <span class="category-name">{{ cat }}</span>
-                <span class="category-count">{{ count }}</span>
-              </li>
-            </ul>
-          </template>
-
-          <p v-if="feedback.matchPct === 100" class="feedback-all-good">
-            All required skills are present in your resume.
-          </p>
-        </template>
-      </div>
 
       <!-- AI recruiter feedback -->
       <div v-if="aiFeedback" class="ai-feedback">
@@ -319,7 +249,6 @@ export { SortIcon };
   gap: 8px;
 }
 
-
 .skills-empty {
   font-size: 13px;
   color: var(--color-text-muted);
@@ -385,43 +314,12 @@ export { SortIcon };
   width: 20%;
 }
 
-// Feedback panel
-.feedback {
-  padding-top: 20px;
-  border-top: 1px solid var(--color-border);
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.feedback-toggle {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  width: 100%;
-  background: none;
-  border: none;
-  padding: 0;
-  cursor: pointer;
-  color: var(--color-text);
-
-  &:hover .feedback-heading {
-    color: var(--color-text-muted);
-  }
-}
-
-.feedback-heading {
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--color-text);
-  margin: 0;
-}
-
 .match-bar-row {
   display: flex;
   justify-content: space-between;
   align-items: baseline;
   font-size: 12px;
+  height: 2rem;
 }
 
 .match-label {
@@ -445,69 +343,7 @@ export { SortIcon };
 
 .match-bar {
   margin-top: -6px;
-}
-
-.feedback-label {
-  font-size: 11px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--color-text-muted);
-  margin: 0;
-}
-
-.gap-list,
-.category-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.gap-item {
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-}
-
-.gap-name {
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--color-text);
-}
-
-.gap-cat {
-  font-size: 11px;
-  color: var(--color-text-muted);
-}
-
-.category-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 12px;
-}
-
-.category-name {
-  color: var(--color-text);
-}
-
-.category-count {
-  font-weight: 600;
-  color: var(--color-text-muted);
-  background: var(--color-bg-subtle);
-  border: 1px solid var(--color-border);
-  border-radius: 99px;
-  padding: 0px 7px;
-  font-size: 11px;
-}
-
-.feedback-all-good {
-  font-size: 12px;
-  color: var(--color-success);
-  margin: 0;
+  margin-bottom: 20px;
 }
 
 .ai-heading {
@@ -531,11 +367,25 @@ export { SortIcon };
   line-height: 1.6;
   color: var(--color-text);
 
-  :deep(p) { margin: 0 0 6px; }
-  :deep(p:last-child) { margin-bottom: 0; }
-  :deep(strong) { font-weight: 600; }
-  :deep(em) { font-style: italic; }
-  :deep(code) { font-family: monospace; font-size: 11px; background: var(--color-bg-subtle); padding: 1px 4px; border-radius: 3px; }
+  :deep(p) {
+    margin: 0 0 6px;
+  }
+  :deep(p:last-child) {
+    margin-bottom: 0;
+  }
+  :deep(strong) {
+    font-weight: 600;
+  }
+  :deep(em) {
+    font-style: italic;
+  }
+  :deep(code) {
+    font-family: monospace;
+    font-size: 11px;
+    background: var(--color-bg-subtle);
+    padding: 1px 4px;
+    border-radius: 3px;
+  }
 }
 
 .ai-list {
@@ -550,9 +400,19 @@ export { SortIcon };
     line-height: 1.5;
     color: var(--color-text);
 
-    :deep(strong) { font-weight: 600; }
-    :deep(em) { font-style: italic; }
-    :deep(code) { font-family: monospace; font-size: 11px; background: var(--color-bg-subtle); padding: 1px 4px; border-radius: 3px; }
+    :deep(strong) {
+      font-weight: 600;
+    }
+    :deep(em) {
+      font-style: italic;
+    }
+    :deep(code) {
+      font-family: monospace;
+      font-size: 11px;
+      background: var(--color-bg-subtle);
+      padding: 1px 4px;
+      border-radius: 3px;
+    }
   }
 
   &--good li {

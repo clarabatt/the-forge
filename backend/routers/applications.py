@@ -242,7 +242,7 @@ def generate_cover_letter(
 
     db_skills = SkillRepository(session).list_by_application(application_id)
     skills = [
-        {"name": s.skill_name, "category": s.category, "rank": s.rank, "confidence": s.ai_confidence}
+        {"name": s.skill_name, "category": s.category, "rank": s.rank, "confidence": s.ai_confidence, "required": s.required}
         for s in db_skills
     ]
 

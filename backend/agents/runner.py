@@ -9,11 +9,12 @@ import json
 import logging
 import re
 import uuid
+from collections import Counter
 from concurrent.futures import ThreadPoolExecutor
 
 from sqlmodel import Session
 
-from backend.agents import cover_letter_agent, feedback_agent, jd_agent, resume_agent
+from backend.agents import cover_letter_agent, feedback_agent, jd_agent, resume_agent, skill_verifier_agent
 from backend.config import settings
 from backend.database.models import (
     AgentName,
@@ -59,22 +60,47 @@ def _log_usage(
     session.commit()
 
 
-def _skill_matched(jd_name: str, detected: set[str]) -> bool:
-    """Return True if jd_name can be matched against the detected skill set.
+MATCH_CONFIDENCE_THRESHOLD = 0.65
 
-    Falls back from exact match → substring containment → token overlap so that
-    composite JD names like "Databases (SQL/NoSQL)" match detected "sql"/"nosql",
-    and expanded forms like "Test-Driven Development" match detected "tdd" when the
-    resume agent emits both forms.
+
+def _skill_confidence(jd_name: str, detected_counts: dict[str, int]) -> float:
+    """Confidence score [0, 1] that jd_name is genuinely present in the resume.
+
+    Combines match quality (exact > token > substring) with frequency across
+    resume blocks. Short/generic substring hits need multiple occurrences to
+    cross the threshold; exact and token-level matches pass with a single mention.
     """
     lower = jd_name.lower()
-    if lower in detected:
-        return True
-    for d in detected:
-        if d and d in lower:
-            return True
-    tokens = {t for t in re.split(r"[\s/()\-,./]+", lower) if len(t) > 2}
-    return bool(tokens & detected)
+
+    if lower in detected_counts:
+        return min(1.0, 0.85 + 0.05 * (detected_counts[lower] - 1))
+
+    jd_tokens = {t for t in re.split(r"[\s/()\-,./&]+", lower) if len(t) > 2}
+    best = 0.0
+
+    for d, freq in detected_counts.items():
+        if not d or d not in lower:
+            continue
+        freq_boost = min(0.15, 0.05 * (freq - 1))
+        if d in jd_tokens:
+            base = 0.72  # standalone token inside JD name — solid evidence
+        elif len(d) >= 5:
+            base = 0.62  # long substring not a standalone token — decent evidence
+        else:
+            base = 0.42  # short substring, likely coincidental without frequency
+        best = max(best, min(1.0, base + freq_boost))
+
+    # Multi-token collective coverage: several JD tokens all appear in resume
+    if jd_tokens:
+        matched = {t: detected_counts[t] for t in jd_tokens if t in detected_counts}
+        if matched:
+            ratio = len(matched) / len(jd_tokens)
+            max_freq = max(matched.values())
+            freq_boost = min(0.15, 0.05 * (max_freq - 1))
+            base = 0.48 + 0.32 * ratio  # all tokens → 0.80, half → 0.64, one-third → 0.59
+            best = max(best, min(1.0, base + freq_boost))
+
+    return best
 
 
 def _build_skills(
@@ -82,16 +108,17 @@ def _build_skills(
     jd_skills: list[dict],
     resume_blocks: list[dict],
 ) -> list[Skill]:
-    detected_names = {
+    # Count how many distinct blocks mention each skill — more blocks = higher confidence
+    detected_counts: Counter = Counter(
         s.lower()
         for block in resume_blocks
         for s in block.get("skills_detected", [])
-    }
+    )
 
     skills = []
     for item in jd_skills:
         name = item.get("name", "")
-        found = _skill_matched(name, detected_names)
+        found = _skill_confidence(name, detected_counts) >= MATCH_CONFIDENCE_THRESHOLD
         skills.append(
             Skill(
                 application_id=app_id,
@@ -100,6 +127,7 @@ def _build_skills(
                 match_status=SkillMatchStatus.found_in_resume if found else SkillMatchStatus.missing,
                 ai_confidence=float(item.get("confidence", 0.5)),
                 rank=int(item.get("rank", 99)),
+                required=bool(item.get("required", True)),
             )
         )
     return skills
@@ -136,8 +164,26 @@ def run_pipeline(application_id: uuid.UUID) -> None:
             app.company_name = jd_result["company_name"]
             app.job_title = jd_result["job_title"]
 
-            # persist skills
+            # build initial skill matches using heuristic confidence scoring
             skills = _build_skills(app.id, jd_result["skills"], resume_result["blocks"])
+
+            # verify matched skills against actual resume text to eliminate false positives
+            found_skills = [s for s in skills if s.match_status == SkillMatchStatus.found_in_resume]
+            if found_skills:
+                verify_result = skill_verifier_agent.run(
+                    skills_to_verify=[s.skill_name for s in found_skills],
+                    resume_blocks=resume_result["blocks"],
+                )
+                verified_set = {
+                    v["skill_name"].lower()
+                    for v in verify_result["verifications"]
+                    if v.get("verified")
+                }
+                for skill in found_skills:
+                    if skill.skill_name.lower() not in verified_set:
+                        skill.match_status = SkillMatchStatus.missing
+                _log_usage(session, app, AgentName.SKILL_VERIFIER, verify_result["usage"])
+
             for skill in skills:
                 session.add(skill)
 
