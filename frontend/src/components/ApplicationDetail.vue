@@ -8,6 +8,7 @@ import ResumeViewer from "@/components/ResumeViewer.vue";
 import SkillsTable from "@/components/SkillsTable.vue";
 import { getAppTitle } from "@/utils/application";
 import StatusBadge from "@/components/ui/StatusBadge.vue";
+import AppSelect from "@/components/ui/AppSelect.vue";
 import BaseDialog from "@/components/ui/BaseDialog.vue";
 import Spinner from "@/components/ui/Spinner.vue";
 import IconAlertCircle from "@/components/icons/IconAlertCircle.vue";
@@ -39,7 +40,12 @@ async function load(id: string) {
     PipelineStatus.FAILED,
     PipelineStatus.PENDING_APPROVAL,
   ]);
-  store.fetchCoverLetter(id).then((cl) => { coverLetter.value = cl }).catch(() => {});
+  store
+    .fetchCoverLetter(id)
+    .then((cl) => {
+      coverLetter.value = cl;
+    })
+    .catch(() => {});
 
   if (terminal.has(store.current.status)) return;
 
@@ -66,6 +72,14 @@ async function load(id: string) {
 const isRetrying = ref(false);
 const isReanalyzing = ref(false);
 const showReanalyzeConfirm = ref(false);
+const reanalyzeResumeId = ref<string | null>(null);
+
+watch(showReanalyzeConfirm, (open) => {
+  if (open) {
+    reanalyzeResumeId.value =
+      resumesStore.selectedResumeId ?? resumesStore.baseResumes[0]?.id ?? null;
+  }
+});
 const isDeleting = ref(false);
 const isDownloading = ref(false);
 const isGeneratingCL = ref(false);
@@ -92,7 +106,7 @@ async function download(format: "docx" | "pdf") {
 
 async function reanalyze() {
   const id = route.params.id as string;
-  const resumeId = resumesStore.selectedResumeId;
+  const resumeId = reanalyzeResumeId.value;
   if (!resumeId) return;
   showReanalyzeConfirm.value = false;
   isReanalyzing.value = true;
@@ -122,10 +136,14 @@ async function generateCoverLetter() {
   try {
     coverLetter.value = await store.generateCoverLetter(id);
     clJustGenerated.value = true;
-    setTimeout(() => { clJustGenerated.value = false; }, 2500);
+    setTimeout(() => {
+      clJustGenerated.value = false;
+    }, 2500);
   } catch {
     clError.value = true;
-    setTimeout(() => { clError.value = false; }, 4000);
+    setTimeout(() => {
+      clError.value = false;
+    }, 4000);
   } finally {
     isGeneratingCL.value = false;
   }
@@ -135,7 +153,9 @@ async function copyToClipboard() {
   if (!coverLetter.value) return;
   await navigator.clipboard.writeText(coverLetter.value.content);
   copied.value = true;
-  setTimeout(() => { copied.value = false; }, 2000);
+  setTimeout(() => {
+    copied.value = false;
+  }, 2000);
 }
 
 async function deleteApp() {
@@ -181,10 +201,7 @@ onUnmounted(closeSSE);
               class="cl-indicator cl-indicator--error"
               title="Failed to generate cover letter"
             />
-            <IconCheckCircle
-              v-else-if="clJustGenerated"
-              class="cl-indicator cl-indicator--done"
-            />
+            <IconCheckCircle v-else-if="clJustGenerated" class="cl-indicator cl-indicator--done" />
           </Transition>
           <ApplicationActionsMenu
             :status="store.current.status"
@@ -282,16 +299,19 @@ onUnmounted(closeSSE);
     close-label="Cancel"
     :action-label="isReanalyzing ? 'Starting…' : 'Re-analyze'"
     action-variant="primary"
-    :action-disabled="isReanalyzing || !resumesStore.selectedResumeId"
+    :action-disabled="isReanalyzing || !reanalyzeResumeId"
     @update:open="showReanalyzeConfirm = $event"
     @action="reanalyze"
   >
     <p class="dialog-body">
-      This will restart the full analysis using
-      <strong>{{ resumesStore.baseResumes.find(r => r.id === resumesStore.selectedResumeId)?.file_name ?? 'the selected resume' }}</strong>
-      as the base resume. All existing skills, feedback, and cover letter will be overwritten and
-      cannot be recovered.
+      All existing skills, feedback, and cover letter will be overwritten and cannot be recovered.
     </p>
+    <label class="reanalyze-label">Resume</label>
+    <AppSelect
+      v-model="reanalyzeResumeId"
+      :options="resumesStore.baseResumes.map(r => ({ value: r.id, label: r.file_name }))"
+      placeholder="Select a resume"
+    />
   </BaseDialog>
 
   <BaseDialog
@@ -410,7 +430,6 @@ onUnmounted(closeSSE);
   opacity: 0;
 }
 
-
 .pipeline-progress {
   display: flex;
   align-items: center;
@@ -503,6 +522,14 @@ onUnmounted(closeSSE);
   margin: 0;
 }
 
+.reanalyze-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--color-text-muted);
+  margin-top: 4px;
+}
+
+
 .dialog-actions {
   display: flex;
   justify-content: flex-end;
@@ -537,4 +564,3 @@ onUnmounted(closeSSE);
   }
 }
 </style>
-
