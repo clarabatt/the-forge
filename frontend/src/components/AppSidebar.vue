@@ -121,11 +121,7 @@ async function onFileSelected(event: Event) {
 
 const statusColor: Record<PipelineStatus, string> = {
   [PipelineStatus.READY]: "var(--color-success)",
-  [PipelineStatus.PENDING_APPROVAL]: "var(--color-warning)",
   [PipelineStatus.ANALYZING]: "var(--color-primary)",
-  [PipelineStatus.TAILORING]: "var(--color-primary)",
-  [PipelineStatus.VALIDATING]: "var(--color-primary)",
-  [PipelineStatus.PENDING_RETRY]: "var(--color-warning)",
   [PipelineStatus.UPLOADED]: "var(--color-text-muted)",
   [PipelineStatus.FAILED]: "var(--color-danger)",
 };

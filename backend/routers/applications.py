@@ -371,7 +371,7 @@ async def stream_application(
 ):
     async def event_generator() -> AsyncGenerator[str, None]:
         last_status = None
-        terminal = {PipelineStatus.READY, PipelineStatus.FAILED, PipelineStatus.PENDING_APPROVAL}
+        terminal = {PipelineStatus.READY, PipelineStatus.FAILED}
 
         for _ in range(150):  # max ~5 min
             session.expire_all()

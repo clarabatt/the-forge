@@ -38,7 +38,6 @@ async function load(id: string) {
   const terminal = new Set([
     PipelineStatus.READY,
     PipelineStatus.FAILED,
-    PipelineStatus.PENDING_APPROVAL,
   ]);
   store
     .fetchCoverLetter(id)

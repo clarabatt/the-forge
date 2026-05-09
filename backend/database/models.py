@@ -9,10 +9,6 @@ from sqlmodel import Field, Relationship, SQLModel
 class PipelineStatus(str, Enum):
     UPLOADED = "UPLOADED"
     ANALYZING = "ANALYZING"
-    PENDING_APPROVAL = "PENDING_APPROVAL"
-    TAILORING = "TAILORING"
-    VALIDATING = "VALIDATING"
-    PENDING_RETRY = "PENDING_RETRY"
     READY = "READY"
     FAILED = "FAILED"
 

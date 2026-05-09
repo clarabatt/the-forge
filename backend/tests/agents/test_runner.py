@@ -48,7 +48,7 @@ def _mock_session_ctx(test_session):
     return mock
 
 
-def test_run_pipeline_transitions_to_pending_approval(session, ApplicationFactory, ResumeFactory):
+def test_run_pipeline_transitions_to_ready(session, ApplicationFactory, ResumeFactory):
     resume = ResumeFactory(raw_text="Python developer")
     app = ApplicationFactory(user_id=resume.user_id, base_resume_id=resume.id)
 
@@ -64,7 +64,7 @@ def test_run_pipeline_transitions_to_pending_approval(session, ApplicationFactor
         run_pipeline(app.id)
 
     session.refresh(app)
-    assert app.status == PipelineStatus.PENDING_APPROVAL
+    assert app.status == PipelineStatus.READY
     assert app.company_name == "Test Corp"
     assert app.job_title == "Software Engineer"
     assert app.analysis_feedback is not None

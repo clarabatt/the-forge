@@ -101,18 +101,12 @@ Speed up the process of tailoring a base resume for each job application. The us
 
 Because LLM calls are slow (60–90s possible), the backend is a state-driven orchestrator. State is persisted in `applications.status` and pushed to the frontend via SSE.
 
-| State              | Trigger                    | Action                                                                      |
-| ------------------ | -------------------------- | --------------------------------------------------------------------------- |
-| `UPLOADED`         | User uploads `.docx`       | Parse text via `python-docx`. Store raw text.                               |
-| `ANALYZING`        | System starts              | Trigger JD Agent and Resume Agent in parallel via Cloud Tasks.              |
-| `PENDING_APPROVAL` | Both agents finish         | Push skill list to UI. Wait for user form submission.                       |
-| `TAILORING`        | User submits approval form | Enqueue Diff Agent via Cloud Tasks.                                         |
-| `VALIDATING`       | Diff Agent returns output  | Judge runs programmatic validation against protected fields.                |
-| `PENDING_RETRY`    | Judge rejects output       | Re-queue Diff Agent with stricter prompt + violation detail. Max 2 retries. |
-| `READY`            | Validation passes          | Render diff JSON. Generate signed download URLs.                            |
-| `FAILED`           | Any unrecoverable error    | Log error, persist message, notify user via SSE.                            |
-
-`PENDING_RETRY` is a distinct state — not a loop back to `TAILORING`. It produces an audit trail of how many retries each application required and prevents UI confusion about why the user is waiting again.
+| State       | Trigger                 | Action                                                         |
+| ----------- | ----------------------- | -------------------------------------------------------------- |
+| `UPLOADED`  | User uploads `.docx`    | Parse text via `python-docx`. Store raw text.                  |
+| `ANALYZING` | System starts           | Run JD Agent, Resume Agent, and Cover Letter Agent in parallel.|
+| `READY`     | All agents finish       | Results available. Render skills, feedback, and cover letter.  |
+| `FAILED`    | Any unrecoverable error | Log error, persist message, notify user via SSE.               |
 
 ---
 
@@ -143,7 +137,7 @@ Because LLM calls are slow (60–90s possible), the backend is a state-driven or
 | `application_status` | Enum                   | `applied`, `denied`, `cancelled`, `approved`. Separate from pipeline status.                   |
 | `base_resume_id`     | UUID FK → `resumes.id` | The resume version used as input.                                                              |
 | `template_version`   | String                 | e.g. `v1`. Stored at creation time; template updates do not retroactively break old downloads. |
-| `retry_count`        | Integer                | Default 0. Incremented on each `PENDING_RETRY` transition.                                     |
+| `retry_count`        | Integer                | Default 0. Unused — kept for schema compatibility.                                              |
 | `error_message`      | Text                   | Nullable. Populated on `FAILED`.                                                               |
 | `created_at`         | DateTime               |                                                                                                |
 
@@ -440,19 +434,10 @@ event: status_changed
 data: {"status": "ANALYZING", "updated_at": "2025-01-01T12:00:00Z"}
 
 event: status_changed
-data: {"status": "PENDING_APPROVAL", "updated_at": "...", "skills": [...]}
+data: {"status": "READY", "updated_at": "..."}
 
 event: status_changed
-data: {"status": "TAILORING", "updated_at": "..."}
-
-event: status_changed
-data: {"status": "PENDING_RETRY", "updated_at": "...", "retry_count": 1}
-
-event: status_changed
-data: {"status": "READY", "updated_at": "...", "diff_url": "/api/applications/{id}/diff", "download_url": "..."}
-
-event: status_changed
-data: {"status": "FAILED", "updated_at": "...", "error": "Judge rejected after 2 retries: date mutation detected"}
+data: {"status": "FAILED", "updated_at": "...", "error": "..."}
 ```
 
 The Vue `EventSource` listener updates Pinia store on each event. The application view is entirely driven by `application.status` — no polling.
