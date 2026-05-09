@@ -38,6 +38,20 @@ export const useResumesStore = defineStore("resumes", () => {
     }
   }
 
+  async function downloadResume(id: string, fileName: string) {
+    const res = await fetch(`/api/resumes/${id}/download`, { credentials: "include" });
+    if (!res.ok) throw new Error("Download failed");
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = fileName;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
   async function renameResume(id: string, fileName: string) {
     const res = await fetch(`/api/resumes/${id}`, {
       method: "PATCH",
@@ -51,5 +65,5 @@ export const useResumesStore = defineStore("resumes", () => {
     if (idx !== -1) resumes.value[idx] = updated;
   }
 
-  return { resumes, baseResumes, selectedResumeId, fetchAll, deleteResume, renameResume };
+  return { resumes, baseResumes, selectedResumeId, fetchAll, deleteResume, renameResume, downloadResume };
 });

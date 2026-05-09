@@ -2,15 +2,18 @@ import uuid
 
 import mammoth
 from fastapi import APIRouter, Depends, HTTPException, UploadFile
+from fastapi.responses import Response
 from pydantic import BaseModel
 from sqlmodel import Session
 
+from sqlmodel import select
+
 from backend.auth import get_current_user
 from backend.config import settings
-from backend.database.models import Resume, ResumeType, User
+from backend.database.models import Application, Resume, ResumeType, User
 from backend.database.repositories import ResumeRepository
 from backend.database.session import get_session
-from backend.gcs import upload_bytes
+from backend.gcs import download_bytes, upload_bytes
 
 router = APIRouter()
 
@@ -79,6 +82,27 @@ async def upload_resume(
     return resume
 
 
+@router.get("/{resume_id}/download")
+def download_resume(
+    resume_id: uuid.UUID,
+    session: Session = Depends(get_session),
+    user: User = Depends(get_current_user),
+):
+    repo = ResumeRepository(session)
+    resume = repo.get_by_id(resume_id)
+    if not resume or resume.user_id != user.id:
+        raise HTTPException(status_code=404, detail="Resume not found")
+    try:
+        data = download_bytes(resume.bucket_key)
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail="Resume file not found in storage")
+    return Response(
+        content=data,
+        media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        headers={"Content-Disposition": f'attachment; filename="{resume.file_name}"'},
+    )
+
+
 class RenameResumeRequest(BaseModel):
     file_name: str
 
@@ -109,4 +133,13 @@ def delete_resume(
     resume = repo.get_by_id(resume_id)
     if not resume or resume.user_id != user.id:
         raise HTTPException(status_code=404, detail="Resume not found")
+    # Null out base_resume_id on any applications referencing this resume
+    # so the file record can be deleted without violating the FK constraint.
+    affected = session.exec(
+        select(Application).where(Application.base_resume_id == resume_id)
+    ).all()
+    for app in affected:
+        app.base_resume_id = None
+        session.add(app)
+    session.flush()
     repo.delete(resume)

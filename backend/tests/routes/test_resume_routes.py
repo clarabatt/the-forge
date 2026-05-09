@@ -223,3 +223,21 @@ def test_delete_resume_of_other_user_returns_404(
     # resume must still exist
     list_resp = client.get("/api/resumes/", cookies={"session": session_cookie(str(owner.id))})
     assert len(list_resp.json()) == 1
+
+
+def test_delete_resume_nulls_base_resume_id_on_applications(
+    client: TestClient, UserFactory, ResumeFactory, ApplicationFactory, session_cookie
+):
+    user = UserFactory()
+    resume = ResumeFactory(user_id=user.id)
+    ApplicationFactory(user_id=user.id, base_resume_id=resume.id)
+
+    resp = client.delete(
+        f"/api/resumes/{resume.id}",
+        cookies={"session": session_cookie(str(user.id))},
+    )
+
+    assert resp.status_code == 204
+    # resume should be gone
+    list_resp = client.get("/api/resumes/", cookies={"session": session_cookie(str(user.id))})
+    assert list_resp.json() == []

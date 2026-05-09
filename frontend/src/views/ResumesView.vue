@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, useTemplateRef, watch } from "vue";
 import { useResumesStore, type Resume } from "@/stores/resumes";
+import BaseDialog from "@/components/ui/BaseDialog.vue";
 
 const resumesStore = useResumesStore();
 
@@ -22,9 +23,16 @@ async function onFileSelected(event: Event) {
   const form = new FormData();
   form.append("file", file);
   try {
-    const res = await fetch("/api/resumes/", { method: "POST", credentials: "include", body: form });
+    const res = await fetch("/api/resumes/", {
+      method: "POST",
+      credentials: "include",
+      body: form,
+    });
     const body = await res.json().catch(() => ({}));
-    if (!res.ok) { uploadError.value = body.detail ?? "Upload failed"; return; }
+    if (!res.ok) {
+      uploadError.value = body.detail ?? "Upload failed";
+      return;
+    }
     await resumesStore.fetchAll();
     if (body?.id) resumesStore.selectedResumeId = body.id;
   } catch {
@@ -52,17 +60,37 @@ watch(openMenuId, (id) => {
   else document.removeEventListener("mousedown", onClickOutside);
 });
 
+// --- Download ---
+const downloadingId = ref<string | null>(null);
+
+async function downloadResume(resume: Resume) {
+  openMenuId.value = null;
+  downloadingId.value = resume.id;
+  try {
+    await resumesStore.downloadResume(resume.id, resume.file_name);
+  } finally {
+    downloadingId.value = null;
+  }
+}
+
 // --- Delete ---
 const deletingId = ref<string | null>(null);
 const deleteError = ref<string | null>(null);
+const resumeToDelete = ref<Resume | null>(null);
 
-async function confirmDelete(resume: Resume) {
+function promptDelete(resume: Resume) {
   openMenuId.value = null;
-  if (!confirm(`Delete "${resume.file_name}"? This cannot be undone.`)) return;
-  deletingId.value = resume.id;
+  resumeToDelete.value = resume;
+}
+
+async function confirmDelete() {
+  if (!resumeToDelete.value) return;
+  const id = resumeToDelete.value.id;
+  deletingId.value = id;
   deleteError.value = null;
+  resumeToDelete.value = null;
   try {
-    await resumesStore.deleteResume(resume.id);
+    await resumesStore.deleteResume(id);
   } catch {
     deleteError.value = "Failed to delete. Please try again.";
   } finally {
@@ -113,13 +141,17 @@ async function submitRename(id: string) {
         {{ isUploading ? "Uploading…" : "+ Upload resume" }}
       </button>
     </header>
-    <input ref="fileInput" type="file" accept=".docx" class="file-input-hidden" @change="onFileSelected" />
+    <input
+      ref="fileInput"
+      type="file"
+      accept=".docx"
+      class="file-input-hidden"
+      @change="onFileSelected"
+    />
 
     <p v-if="uploadError || deleteError" class="error-banner">{{ uploadError ?? deleteError }}</p>
 
-    <div v-if="!resumesStore.baseResumes.length" class="empty-state">
-      No resumes uploaded yet.
-    </div>
+    <div v-if="!resumesStore.baseResumes.length" class="empty-state">No resumes uploaded yet.</div>
 
     <table v-else class="resume-table">
       <thead>
@@ -134,7 +166,7 @@ async function submitRename(id: string) {
         <tr
           v-for="resume in resumesStore.baseResumes"
           :key="resume.id"
-          :class="{ 'row--deleting': deletingId === resume.id }"
+          :class="{ 'row--busy': deletingId === resume.id || downloadingId === resume.id }"
         >
           <td class="cell-name">
             <template v-if="renamingId === resume.id">
@@ -146,7 +178,9 @@ async function submitRename(id: string) {
                   @keydown.esc="cancelRename"
                 />
                 <button type="submit" class="rename-btn rename-btn--save">Save</button>
-                <button type="button" class="rename-btn rename-btn--cancel" @click="cancelRename">Cancel</button>
+                <button type="button" class="rename-btn rename-btn--cancel" @click="cancelRename">
+                  Cancel
+                </button>
               </form>
               <p v-if="renameError" class="rename-error">{{ renameError }}</p>
             </template>
@@ -168,15 +202,40 @@ async function submitRename(id: string) {
                 </svg>
               </button>
               <div v-if="openMenuId === resume.id" class="menu-dropdown">
+                <button class="menu-item" @click="downloadResume(resume)">
+                  <svg width="13" height="13" viewBox="0 0 13 13" fill="none" aria-hidden="true">
+                    <path
+                      d="M6.5 1v8M3.5 6l3 3 3-3"
+                      stroke="currentColor"
+                      stroke-width="1.5"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                    <path
+                      d="M1.5 10.5v1h10v-1"
+                      stroke="currentColor"
+                      stroke-width="1.5"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                  </svg>
+                  Download
+                </button>
                 <button class="menu-item" @click="startRename(resume)">
                   <svg width="13" height="13" viewBox="0 0 15 15" fill="none" aria-hidden="true">
-                    <path d="M11.854 2.146a.5.5 0 0 0-.707 0L4.5 8.793V10.5h1.707l6.647-6.646a.5.5 0 0 0 0-.708l-1-1ZM3.5 9.207 10.5 2.207l.293.293-7 7H3.5v-.293Z" fill="currentColor"/>
+                    <path
+                      d="M11.854 2.146a.5.5 0 0 0-.707 0L4.5 8.793V10.5h1.707l6.647-6.646a.5.5 0 0 0 0-.708l-1-1ZM3.5 9.207 10.5 2.207l.293.293-7 7H3.5v-.293Z"
+                      fill="currentColor"
+                    />
                   </svg>
                   Rename
                 </button>
-                <button class="menu-item menu-item--danger" @click="confirmDelete(resume)">
+                <button class="menu-item menu-item--danger" @click="promptDelete(resume)">
                   <svg width="13" height="13" viewBox="0 0 15 15" fill="none" aria-hidden="true">
-                    <path d="M5.5 1a.5.5 0 0 0 0 1h4a.5.5 0 0 0 0-1h-4ZM3 3.5a.5.5 0 0 1 .5-.5h8a.5.5 0 0 1 0 1H11v8a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-8h-.5a.5.5 0 0 1-.5-.5ZM5 4v8h5V4H5Z" fill="currentColor"/>
+                    <path
+                      d="M5.5 1a.5.5 0 0 0 0 1h4a.5.5 0 0 0 0-1h-4ZM3 3.5a.5.5 0 0 1 .5-.5h8a.5.5 0 0 1 0 1H11v8a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-8h-.5a.5.5 0 0 1-.5-.5ZM5 4v8h5V4H5Z"
+                      fill="currentColor"
+                    />
                   </svg>
                   Delete
                 </button>
@@ -187,6 +246,27 @@ async function submitRename(id: string) {
       </tbody>
     </table>
   </div>
+
+  <BaseDialog
+    :open="!!resumeToDelete"
+    title="Delete resume"
+    action-label="Delete"
+    action-variant="danger"
+    close-label="Cancel"
+    @update:open="
+      (v) => {
+        if (!v) resumeToDelete = null;
+      }
+    "
+    @action="confirmDelete"
+  >
+    <p class="dialog-body">
+      Are you sure you want to delete <strong>{{ resumeToDelete?.file_name }}</strong
+      >?
+      <br />
+      The underlying file will be kept to preserve any existing applications that depend on it.
+    </p>
+  </BaseDialog>
 </template>
 
 <style lang="scss" scoped>
@@ -213,7 +293,19 @@ async function submitRename(id: string) {
   line-height: 1.2;
 }
 
-.file-input-hidden { display: none; }
+.file-input-hidden {
+  display: none;
+}
+
+.dialog-body {
+  font-size: 14px;
+  color: var(--color-text-muted);
+  line-height: 1.5;
+
+  strong {
+    color: var(--color-text);
+  }
+}
 
 .btn-upload {
   padding: 7px 14px;
@@ -227,8 +319,13 @@ async function submitRename(id: string) {
   white-space: nowrap;
   flex-shrink: 0;
 
-  &:hover:not(:disabled) { background: var(--color-primary-hover); }
-  &:disabled { opacity: 0.6; cursor: not-allowed; }
+  &:hover:not(:disabled) {
+    background: var(--color-primary-hover);
+  }
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
 }
 
 .empty-state {
@@ -257,8 +354,12 @@ async function submitRename(id: string) {
     padding: 0 12px 8px;
     border-bottom: 1px solid var(--color-border);
 
-    &:first-child { padding-left: 0; }
-    &:last-child { padding-right: 0; }
+    &:first-child {
+      padding-left: 0;
+    }
+    &:last-child {
+      padding-right: 0;
+    }
   }
 
   td {
@@ -266,16 +367,27 @@ async function submitRename(id: string) {
     border-bottom: 1px solid var(--color-border);
     vertical-align: middle;
 
-    &:first-child { padding-left: 0; }
-    &:last-child { padding-right: 0; }
+    &:first-child {
+      padding-left: 0;
+    }
+    &:last-child {
+      padding-right: 0;
+    }
   }
 
-  tr:last-child td { border-bottom: none; }
+  tr:last-child td {
+    border-bottom: none;
+  }
 
-  tr.row--deleting { opacity: 0.4; pointer-events: none; }
+  tr.row--busy {
+    opacity: 0.4;
+    pointer-events: none;
+  }
 }
 
-.cell-name { width: 100%; }
+.cell-name {
+  width: 100%;
+}
 
 .file-name {
   color: var(--color-text);
@@ -319,13 +431,18 @@ async function submitRename(id: string) {
   &--save {
     background: var(--color-primary);
     color: #fff;
-    &:hover { background: var(--color-primary-hover); }
+    &:hover {
+      background: var(--color-primary-hover);
+    }
   }
 
   &--cancel {
     background: var(--color-border);
     color: var(--color-text);
-    &:hover { background: var(--color-text-muted); color: #fff; }
+    &:hover {
+      background: var(--color-text-muted);
+      color: #fff;
+    }
   }
 }
 
@@ -385,11 +502,15 @@ async function submitRename(id: string) {
   color: var(--color-text);
   text-align: left;
 
-  &:hover { background: var(--color-bg-subtle); }
+  &:hover {
+    background: var(--color-bg-subtle);
+  }
 
   &--danger {
     color: var(--color-danger);
-    &:hover { background: color-mix(in srgb, var(--color-danger) 10%, transparent); }
+    &:hover {
+      background: color-mix(in srgb, var(--color-danger) 10%, transparent);
+    }
   }
 }
 </style>
