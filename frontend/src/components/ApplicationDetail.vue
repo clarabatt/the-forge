@@ -67,6 +67,7 @@ const isDeleting = ref(false);
 const isDownloading = ref(false);
 const isGeneratingCL = ref(false);
 const clJustGenerated = ref(false);
+const clError = ref(false);
 const showDeleteConfirm = ref(false);
 const showJdModal = ref(false);
 const showCLModal = ref(false);
@@ -114,10 +115,14 @@ async function retry() {
 async function generateCoverLetter() {
   const id = route.params.id as string;
   isGeneratingCL.value = true;
+  clError.value = false;
   try {
     coverLetter.value = await store.generateCoverLetter(id);
     clJustGenerated.value = true;
     setTimeout(() => { clJustGenerated.value = false; }, 2500);
+  } catch {
+    clError.value = true;
+    setTimeout(() => { clError.value = false; }, 4000);
   } finally {
     isGeneratingCL.value = false;
   }
@@ -168,6 +173,20 @@ onUnmounted(closeSSE);
           <StatusBadge :status="store.current.status" />
           <Transition name="cl-indicator">
             <Spinner v-if="isGeneratingCL" :size="14" class="cl-indicator" />
+            <svg
+              v-else-if="clError"
+              class="cl-indicator cl-indicator--error"
+              width="14"
+              height="14"
+              viewBox="0 0 14 14"
+              fill="none"
+              aria-hidden="true"
+              title="Failed to generate cover letter"
+            >
+              <circle cx="7" cy="7" r="6" stroke="currentColor" stroke-width="1.5" />
+              <path d="M7 4.5v3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+              <circle cx="7" cy="9.5" r="0.75" fill="currentColor" />
+            </svg>
             <svg
               v-else-if="clJustGenerated"
               class="cl-indicator cl-indicator--done"
@@ -418,6 +437,10 @@ onUnmounted(closeSSE);
 
   &--done {
     color: var(--color-success, #22c55e);
+  }
+
+  &--error {
+    color: var(--color-danger);
   }
 }
 
