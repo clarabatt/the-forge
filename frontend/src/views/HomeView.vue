@@ -40,7 +40,7 @@ onMounted(() => {
         </button>
         <span class="mobile-topbar-title">The Forge</span>
       </div>
-      <div v-if="!route.params.id" class="detail-placeholder">
+      <div v-if="!route.params.id && route.name !== 'resumes'" class="detail-placeholder">
         <p>Select an application from the sidebar to view its details.</p>
       </div>
       <RouterView v-else key="detail" />

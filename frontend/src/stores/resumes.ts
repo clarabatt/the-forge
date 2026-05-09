@@ -29,5 +29,27 @@ export const useResumesStore = defineStore("resumes", () => {
     }
   }
 
-  return { resumes, baseResumes, selectedResumeId, fetchAll };
+  async function deleteResume(id: string) {
+    const res = await fetch(`/api/resumes/${id}`, { method: "DELETE", credentials: "include" });
+    if (!res.ok) throw new Error("Delete failed");
+    resumes.value = resumes.value.filter((r) => r.id !== id);
+    if (selectedResumeId.value === id) {
+      selectedResumeId.value = baseResumes.value[0]?.id ?? null;
+    }
+  }
+
+  async function renameResume(id: string, fileName: string) {
+    const res = await fetch(`/api/resumes/${id}`, {
+      method: "PATCH",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ file_name: fileName }),
+    });
+    if (!res.ok) throw new Error("Rename failed");
+    const updated: Resume = await res.json();
+    const idx = resumes.value.findIndex((r) => r.id === id);
+    if (idx !== -1) resumes.value[idx] = updated;
+  }
+
+  return { resumes, baseResumes, selectedResumeId, fetchAll, deleteResume, renameResume };
 });

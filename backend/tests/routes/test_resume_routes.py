@@ -113,3 +113,113 @@ def test_upload_resume_increments_version_and_demotes_previous(
     assert len(resumes) == 2
     latest_count = sum(1 for r in resumes if r["is_latest"])
     assert latest_count == 1
+
+
+# --- PATCH (rename) ---
+
+def test_rename_resume_unauthenticated_returns_401(client: TestClient, UserFactory, ResumeFactory):
+    user = UserFactory()
+    resume = ResumeFactory(user_id=user.id)
+
+    resp = client.patch(f"/api/resumes/{resume.id}", json={"file_name": "new_name.docx"})
+
+    assert resp.status_code == 401
+
+
+def test_rename_resume_updates_file_name(client: TestClient, UserFactory, ResumeFactory, session_cookie):
+    user = UserFactory()
+    resume = ResumeFactory(user_id=user.id, file_name="old.docx")
+
+    resp = client.patch(
+        f"/api/resumes/{resume.id}",
+        json={"file_name": "new.docx"},
+        cookies={"session": session_cookie(str(user.id))},
+    )
+
+    assert resp.status_code == 200
+    assert resp.json()["file_name"] == "new.docx"
+
+
+def test_rename_resume_not_found_returns_404(client: TestClient, UserFactory, session_cookie):
+    import uuid
+    user = UserFactory()
+
+    resp = client.patch(
+        f"/api/resumes/{uuid.uuid4()}",
+        json={"file_name": "x.docx"},
+        cookies={"session": session_cookie(str(user.id))},
+    )
+
+    assert resp.status_code == 404
+
+
+def test_rename_resume_of_other_user_returns_404(
+    client: TestClient, UserFactory, ResumeFactory, session_cookie
+):
+    owner = UserFactory()
+    other = UserFactory()
+    resume = ResumeFactory(user_id=owner.id)
+
+    resp = client.patch(
+        f"/api/resumes/{resume.id}",
+        json={"file_name": "hacked.docx"},
+        cookies={"session": session_cookie(str(other.id))},
+    )
+
+    assert resp.status_code == 404
+
+
+# --- DELETE ---
+
+def test_delete_resume_unauthenticated_returns_401(client: TestClient, UserFactory, ResumeFactory):
+    user = UserFactory()
+    resume = ResumeFactory(user_id=user.id)
+
+    resp = client.delete(f"/api/resumes/{resume.id}")
+
+    assert resp.status_code == 401
+
+
+def test_delete_resume_removes_it(client: TestClient, UserFactory, ResumeFactory, session_cookie):
+    user = UserFactory()
+    resume = ResumeFactory(user_id=user.id)
+
+    resp = client.delete(
+        f"/api/resumes/{resume.id}",
+        cookies={"session": session_cookie(str(user.id))},
+    )
+
+    assert resp.status_code == 204
+
+    list_resp = client.get("/api/resumes/", cookies={"session": session_cookie(str(user.id))})
+    assert list_resp.json() == []
+
+
+def test_delete_resume_not_found_returns_404(client: TestClient, UserFactory, session_cookie):
+    import uuid
+    user = UserFactory()
+
+    resp = client.delete(
+        f"/api/resumes/{uuid.uuid4()}",
+        cookies={"session": session_cookie(str(user.id))},
+    )
+
+    assert resp.status_code == 404
+
+
+def test_delete_resume_of_other_user_returns_404(
+    client: TestClient, UserFactory, ResumeFactory, session_cookie
+):
+    owner = UserFactory()
+    other = UserFactory()
+    resume = ResumeFactory(user_id=owner.id)
+
+    resp = client.delete(
+        f"/api/resumes/{resume.id}",
+        cookies={"session": session_cookie(str(other.id))},
+    )
+
+    assert resp.status_code == 404
+    # resume must still exist
+    list_resp = client.get("/api/resumes/", cookies={"session": session_cookie(str(owner.id))})
+    assert len(list_resp.json()) == 1

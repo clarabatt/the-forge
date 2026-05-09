@@ -2,6 +2,7 @@ import uuid
 
 import mammoth
 from fastapi import APIRouter, Depends, HTTPException, UploadFile
+from pydantic import BaseModel
 from sqlmodel import Session
 
 from backend.auth import get_current_user
@@ -76,3 +77,36 @@ async def upload_resume(
     session.commit()
     session.refresh(resume)
     return resume
+
+
+class RenameResumeRequest(BaseModel):
+    file_name: str
+
+
+@router.patch("/{resume_id}")
+def rename_resume(
+    resume_id: uuid.UUID,
+    body: RenameResumeRequest,
+    session: Session = Depends(get_session),
+    user: User = Depends(get_current_user),
+):
+    repo = ResumeRepository(session)
+    resume = repo.get_by_id(resume_id)
+    if not resume or resume.user_id != user.id:
+        raise HTTPException(status_code=404, detail="Resume not found")
+    resume.file_name = body.file_name.strip()
+    repo.update(resume)
+    return resume
+
+
+@router.delete("/{resume_id}", status_code=204)
+def delete_resume(
+    resume_id: uuid.UUID,
+    session: Session = Depends(get_session),
+    user: User = Depends(get_current_user),
+):
+    repo = ResumeRepository(session)
+    resume = repo.get_by_id(resume_id)
+    if not resume or resume.user_id != user.id:
+        raise HTTPException(status_code=404, detail="Resume not found")
+    repo.delete(resume)

@@ -160,7 +160,22 @@ const statusColor: Record<PipelineStatus, string> = {
     <div class="sidebar-body">
       <template v-if="!collapsed">
         <div class="sidebar-section">
-          <p class="sidebar-label">Base Resume</p>
+          <div class="sidebar-label-row">
+            <p class="sidebar-label">Base Resume</p>
+            <button
+              class="sidebar-label-action"
+              aria-label="Manage resumes"
+              data-tooltip="Manage resumes"
+              @click="router.push({ name: 'resumes' }); emit('close')"
+            >
+              <svg width="15" height="15" viewBox="0 0 15 15" fill="none" aria-hidden="true">
+                <path
+                  d="M7.5 1a6.5 6.5 0 1 0 0 13A6.5 6.5 0 0 0 7.5 1Zm0 1A5.5 5.5 0 1 1 7.5 13 5.5 5.5 0 0 1 7.5 2ZM7.5 5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5Zm0 1a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3Z"
+                  fill="currentColor"
+                />
+              </svg>
+            </button>
+          </div>
           <SelectRoot v-model="selectedResumeId">
             <SelectTrigger class="select-trigger" aria-label="Select base resume">
               <SelectValue placeholder="No resume" />
@@ -400,13 +415,59 @@ const statusColor: Record<PipelineStatus, string> = {
   }
 }
 
+.sidebar-label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
 .sidebar-label {
   font-size: 11px;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: var(--color-text-muted);
-  margin-bottom: 8px;
+  margin-bottom: 0;
+}
+
+.sidebar-label-action {
+  position: relative;
+  background: none;
+  border: none;
+  padding: 2px;
+  cursor: pointer;
+  color: var(--color-text-muted);
+  display: flex;
+  align-items: center;
+  border-radius: var(--radius);
+
+  &:hover {
+    color: var(--color-text);
+    background: var(--color-border);
+  }
+
+  &::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    top: calc(100% + 6px);
+    right: 0;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    padding: 4px 8px;
+    font-size: 11px;
+    white-space: nowrap;
+    color: var(--color-text);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.15s ease;
+  }
+
+  &:hover::after {
+    opacity: 1;
+  }
 }
 
 .sidebar-empty {
