@@ -276,7 +276,7 @@ const statusColor: Record<PipelineStatus, string> = {
 
     <!-- Fixed footer -->
     <div class="sidebar-footer" :class="{ 'sidebar-footer--collapsed': collapsed }">
-      <Avatar :src="authStore.user?.picture_url" :name="authStore.user?.full_name ?? ''" />
+      <Avatar v-if="!collapsed" :src="authStore.user?.picture_url" :name="authStore.user?.full_name ?? ''" />
 
       <div v-if="!collapsed && costDisplay" class="footer-cost">
         <span class="cost-label">This month</span>
