@@ -10,6 +10,9 @@ import { getAppTitle } from "@/utils/application";
 import StatusBadge from "@/components/ui/StatusBadge.vue";
 import BaseDialog from "@/components/ui/BaseDialog.vue";
 import Spinner from "@/components/ui/Spinner.vue";
+import IconAlertCircle from "@/components/icons/IconAlertCircle.vue";
+import IconCheckCircle from "@/components/icons/IconCheckCircle.vue";
+import IconDownload from "@/components/icons/IconDownload.vue";
 
 const route = useRoute();
 const router = useRouter();
@@ -173,32 +176,15 @@ onUnmounted(closeSSE);
           <StatusBadge :status="store.current.status" />
           <Transition name="cl-indicator">
             <Spinner v-if="isGeneratingCL" :size="14" class="cl-indicator" />
-            <svg
+            <IconAlertCircle
               v-else-if="clError"
               class="cl-indicator cl-indicator--error"
-              width="14"
-              height="14"
-              viewBox="0 0 14 14"
-              fill="none"
-              aria-hidden="true"
               title="Failed to generate cover letter"
-            >
-              <circle cx="7" cy="7" r="6" stroke="currentColor" stroke-width="1.5" />
-              <path d="M7 4.5v3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
-              <circle cx="7" cy="9.5" r="0.75" fill="currentColor" />
-            </svg>
-            <svg
+            />
+            <IconCheckCircle
               v-else-if="clJustGenerated"
               class="cl-indicator cl-indicator--done"
-              width="14"
-              height="14"
-              viewBox="0 0 14 14"
-              fill="none"
-              aria-hidden="true"
-            >
-              <circle cx="7" cy="7" r="6" stroke="currentColor" stroke-width="1.5" />
-              <path d="M4.5 7l2 2 3-3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
-            </svg>
+            />
           </Transition>
           <ApplicationActionsMenu
             :status="store.current.status"
@@ -240,42 +226,12 @@ onUnmounted(closeSSE);
         <div class="detail-actions">
           <div class="btn-group">
             <button class="btn-group__btn" :disabled="isDownloading" @click="download('docx')">
-              <svg width="13" height="13" viewBox="0 0 13 13" fill="none" aria-hidden="true">
-                <path
-                  d="M6.5 1v8M3.5 6l3 3 3-3"
-                  stroke="currentColor"
-                  stroke-width="1.5"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                />
-                <path
-                  d="M1.5 10.5v1h10v-1"
-                  stroke="currentColor"
-                  stroke-width="1.5"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                />
-              </svg>
+              <IconDownload />
               DOCX
             </button>
             <div class="btn-group__divider" />
             <button class="btn-group__btn" :disabled="isDownloading" @click="download('pdf')">
-              <svg width="13" height="13" viewBox="0 0 13 13" fill="none" aria-hidden="true">
-                <path
-                  d="M6.5 1v8M3.5 6l3 3 3-3"
-                  stroke="currentColor"
-                  stroke-width="1.5"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                />
-                <path
-                  d="M1.5 10.5v1h10v-1"
-                  stroke="currentColor"
-                  stroke-width="1.5"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                />
-              </svg>
+              <IconDownload />
               PDF
             </button>
           </div>

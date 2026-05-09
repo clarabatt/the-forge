@@ -2,6 +2,10 @@
 import { ref, useTemplateRef, watch } from "vue";
 import { useResumesStore, type Resume } from "@/stores/resumes";
 import BaseDialog from "@/components/ui/BaseDialog.vue";
+import IconDotsVertical from "@/components/icons/IconDotsVertical.vue";
+import IconDownload from "@/components/icons/IconDownload.vue";
+import IconEdit from "@/components/icons/IconEdit.vue";
+import IconTrashBin from "@/components/icons/IconTrashBin.vue";
 
 const resumesStore = useResumesStore();
 
@@ -195,48 +199,19 @@ async function submitRename(id: string) {
                 :aria-label="`Actions for ${resume.file_name}`"
                 @click="toggleMenu(resume.id)"
               >
-                <svg width="14" height="14" viewBox="0 0 15 15" fill="none" aria-hidden="true">
-                  <circle cx="7.5" cy="2.5" r="1.25" fill="currentColor" />
-                  <circle cx="7.5" cy="7.5" r="1.25" fill="currentColor" />
-                  <circle cx="7.5" cy="12.5" r="1.25" fill="currentColor" />
-                </svg>
+                <IconDotsVertical width="14" height="14" />
               </button>
               <div v-if="openMenuId === resume.id" class="menu-dropdown">
                 <button class="menu-item" @click="downloadResume(resume)">
-                  <svg width="13" height="13" viewBox="0 0 13 13" fill="none" aria-hidden="true">
-                    <path
-                      d="M6.5 1v8M3.5 6l3 3 3-3"
-                      stroke="currentColor"
-                      stroke-width="1.5"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                    />
-                    <path
-                      d="M1.5 10.5v1h10v-1"
-                      stroke="currentColor"
-                      stroke-width="1.5"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                    />
-                  </svg>
+                  <IconDownload />
                   Download
                 </button>
                 <button class="menu-item" @click="startRename(resume)">
-                  <svg width="13" height="13" viewBox="0 0 15 15" fill="none" aria-hidden="true">
-                    <path
-                      d="M11.854 2.146a.5.5 0 0 0-.707 0L4.5 8.793V10.5h1.707l6.647-6.646a.5.5 0 0 0 0-.708l-1-1ZM3.5 9.207 10.5 2.207l.293.293-7 7H3.5v-.293Z"
-                      fill="currentColor"
-                    />
-                  </svg>
+                  <IconEdit />
                   Rename
                 </button>
                 <button class="menu-item menu-item--danger" @click="promptDelete(resume)">
-                  <svg width="13" height="13" viewBox="0 0 15 15" fill="none" aria-hidden="true">
-                    <path
-                      d="M5.5 1a.5.5 0 0 0 0 1h4a.5.5 0 0 0 0-1h-4ZM3 3.5a.5.5 0 0 1 .5-.5h8a.5.5 0 0 1 0 1H11v8a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-8h-.5a.5.5 0 0 1-.5-.5ZM5 4v8h5V4H5Z"
-                      fill="currentColor"
-                    />
-                  </svg>
+                  <IconTrashBin />
                   Delete
                 </button>
               </div>

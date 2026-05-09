@@ -17,6 +17,11 @@ import { useAuthStore } from "@/stores/auth";
 import { getAppTitle } from "@/utils/application";
 import ProgressBar from "@/components/ui/ProgressBar.vue";
 import Avatar from "@/components/ui/Avatar.vue";
+import IconHamburger from "@/components/icons/IconHamburger.vue";
+import IconSettings from "@/components/icons/IconSettings.vue";
+import IconChevronDown from "@/components/icons/IconChevronDown.vue";
+import IconDotsVertical from "@/components/icons/IconDotsVertical.vue";
+import IconLogout from "@/components/icons/IconLogout.vue";
 
 const props = defineProps<{ mobileOpen?: boolean }>();
 const emit = defineEmits<{ "new-application": []; close: [] }>();
@@ -148,11 +153,7 @@ const statusColor: Record<PipelineStatus, string> = {
         :title="collapsed ? 'Expand sidebar' : 'Collapse sidebar'"
         @click="props.mobileOpen ? emit('close') : (collapsed = !collapsed)"
       >
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-          <rect x="1" y="3" width="14" height="1.5" rx="0.75" fill="currentColor" />
-          <rect x="1" y="7.25" width="14" height="1.5" rx="0.75" fill="currentColor" />
-          <rect x="1" y="11.5" width="14" height="1.5" rx="0.75" fill="currentColor" />
-        </svg>
+        <IconHamburger />
       </button>
     </div>
 
@@ -168,26 +169,13 @@ const statusColor: Record<PipelineStatus, string> = {
               data-tooltip="Manage resumes"
               @click="router.push({ name: 'resumes' }); emit('close')"
             >
-              <svg width="15" height="15" viewBox="0 0 15 15" fill="none" aria-hidden="true">
-                <path
-                  d="M7.5 1a6.5 6.5 0 1 0 0 13A6.5 6.5 0 0 0 7.5 1Zm0 1A5.5 5.5 0 1 1 7.5 13 5.5 5.5 0 0 1 7.5 2ZM7.5 5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5Zm0 1a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3Z"
-                  fill="currentColor"
-                />
-              </svg>
+              <IconSettings />
             </button>
           </div>
           <SelectRoot v-model="selectedResumeId">
             <SelectTrigger class="select-trigger" aria-label="Select base resume">
               <SelectValue placeholder="No resume" />
-              <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
-                <path
-                  d="M3 4.5L6 7.5L9 4.5"
-                  stroke="currentColor"
-                  stroke-width="1.5"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                />
-              </svg>
+              <IconChevronDown />
             </SelectTrigger>
             <SelectPortal>
               <SelectContent class="select-content" position="popper" :side-offset="4">
@@ -298,20 +286,11 @@ const statusColor: Record<PipelineStatus, string> = {
 
       <div ref="menuRef" class="footer-menu">
         <button class="menu-trigger" title="More options" @click="toggleMenu">
-          <svg width="15" height="15" viewBox="0 0 15 15" fill="none" aria-hidden="true">
-            <circle cx="7.5" cy="2.5" r="1.25" fill="currentColor" />
-            <circle cx="7.5" cy="7.5" r="1.25" fill="currentColor" />
-            <circle cx="7.5" cy="12.5" r="1.25" fill="currentColor" />
-          </svg>
+          <IconDotsVertical />
         </button>
         <div v-if="menuOpen" class="menu-dropdown">
           <button class="menu-item menu-item--danger" @click="logout">
-            <svg width="14" height="14" viewBox="0 0 15 15" fill="none" aria-hidden="true">
-              <path
-                d="M3 1.5A1.5 1.5 0 0 1 4.5 0h6A1.5 1.5 0 0 1 12 1.5v3a.5.5 0 0 1-1 0v-3a.5.5 0 0 0-.5-.5h-6a.5.5 0 0 0-.5.5v12a.5.5 0 0 0 .5.5h6a.5.5 0 0 0 .5-.5v-3a.5.5 0 0 1 1 0v3A1.5 1.5 0 0 1 10.5 15h-6A1.5 1.5 0 0 1 3 13.5V1.5ZM9.854 5.146a.5.5 0 1 0-.708.708L10.793 7.5H5.5a.5.5 0 0 0 0 1h5.293l-1.647 1.646a.5.5 0 0 0 .708.708l2.5-2.5a.5.5 0 0 0 0-.708l-2.5-2.5Z"
-                fill="currentColor"
-              />
-            </svg>
+            <IconLogout />
             Log out
           </button>
         </div>

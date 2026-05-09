@@ -6,6 +6,7 @@ import { useResumesStore } from "@/stores/resumes";
 import { useAuthStore } from "@/stores/auth";
 import AppSidebar from "@/components/AppSidebar.vue";
 import NewApplicationModal from "@/components/NewApplicationModal.vue";
+import IconHamburger from "@/components/icons/IconHamburger.vue";
 
 const route = useRoute();
 const appsStore = useApplicationsStore();
@@ -32,11 +33,7 @@ onMounted(() => {
     <main class="detail-area">
       <div class="mobile-topbar">
         <button class="mobile-menu-btn" aria-label="Open menu" @click="sidebarOpen = true">
-          <svg width="18" height="18" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-            <rect x="1" y="3" width="14" height="1.5" rx="0.75" fill="currentColor" />
-            <rect x="1" y="7.25" width="14" height="1.5" rx="0.75" fill="currentColor" />
-            <rect x="1" y="11.5" width="14" height="1.5" rx="0.75" fill="currentColor" />
-          </svg>
+          <IconHamburger width="18" height="18" />
         </button>
         <span class="mobile-topbar-title">The Forge</span>
       </div>
