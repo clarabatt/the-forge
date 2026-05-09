@@ -6,6 +6,7 @@ import { useResumesStore } from "@/stores/resumes";
 import { useAuthStore } from "@/stores/auth";
 import { getAppTitle } from "@/utils/application";
 import AppSelect from "@/components/ui/AppSelect.vue";
+import BaseButton from "@/components/ui/BaseButton.vue";
 import ProgressBar from "@/components/ui/ProgressBar.vue";
 import Avatar from "@/components/ui/Avatar.vue";
 import IconHamburger from "@/components/icons/IconHamburger.vue";
@@ -40,7 +41,6 @@ const selectedResumeId = computed({
     resumesStore.selectedResumeId = v || null;
   },
 });
-
 
 const costDisplay = computed(() => {
   const u = authStore.usage;
@@ -133,7 +133,10 @@ const statusColor: Record<PipelineStatus, string> = {
 
 <template>
   <div v-if="props.mobileOpen" class="mobile-backdrop" @click="emit('close')" />
-  <aside class="sidebar" :class="{ 'sidebar--collapsed': collapsed, 'sidebar--mobile-open': props.mobileOpen }">
+  <aside
+    class="sidebar"
+    :class="{ 'sidebar--collapsed': collapsed, 'sidebar--mobile-open': props.mobileOpen }"
+  >
     <!-- Header -->
     <div class="sidebar-header">
       <span v-if="!collapsed" class="sidebar-title">The Forge</span>
@@ -157,14 +160,17 @@ const statusColor: Record<PipelineStatus, string> = {
               class="sidebar-label-action"
               aria-label="Manage resumes"
               data-tooltip="Manage resumes"
-              @click="router.push({ name: 'resumes' }); emit('close')"
+              @click="
+                router.push({ name: 'resumes' });
+                emit('close');
+              "
             >
               <IconSettings />
             </button>
           </div>
           <AppSelect
             v-model="selectedResumeId"
-            :options="resumesStore.baseResumes.map(r => ({ value: r.id, label: r.file_name }))"
+            :options="resumesStore.baseResumes.map((r) => ({ value: r.id, label: r.file_name }))"
             placeholder="No resume"
           />
 
@@ -187,8 +193,9 @@ const statusColor: Record<PipelineStatus, string> = {
         </div>
 
         <div class="sidebar-section">
-          <button
-            class="btn-new-app"
+          <BaseButton
+            variant="primary"
+            block
             :disabled="hasNoBaseResumes"
             :aria-label="
               hasNoBaseResumes ? 'Upload a resume to create an application' : 'New application'
@@ -198,8 +205,8 @@ const statusColor: Record<PipelineStatus, string> = {
             "
             @click="emit('new-application')"
           >
-            + New Application
-          </button>
+            New Application
+          </BaseButton>
         </div>
 
         <div class="sidebar-section sidebar-section--apps">
@@ -250,7 +257,11 @@ const statusColor: Record<PipelineStatus, string> = {
 
     <!-- Fixed footer -->
     <div class="sidebar-footer" :class="{ 'sidebar-footer--collapsed': collapsed }">
-      <Avatar v-if="!collapsed" :src="authStore.user?.picture_url" :name="authStore.user?.full_name ?? ''" />
+      <Avatar
+        v-if="!collapsed"
+        :src="authStore.user?.picture_url"
+        :name="authStore.user?.full_name ?? ''"
+      />
 
       <div v-if="!collapsed && costDisplay" class="footer-cost">
         <span class="cost-label">This month</span>
@@ -459,30 +470,6 @@ const statusColor: Record<PipelineStatus, string> = {
   color: var(--color-danger);
 }
 
-// New app button
-.btn-new-app {
-  width: 100%;
-  padding: 7px 12px;
-  background: var(--color-primary);
-  color: #fff;
-  border: none;
-  border-radius: var(--radius);
-  font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
-  text-align: left;
-
-  &:hover:not(:disabled) {
-    background: var(--color-primary-hover);
-  }
-
-  &:disabled {
-    background: var(--color-text-muted);
-    cursor: not-allowed;
-    opacity: 0.6;
-  }
-}
-
 // App list
 .app-list {
   list-style: none;
@@ -571,7 +558,6 @@ const statusColor: Record<PipelineStatus, string> = {
   }
 }
 
-
 .footer-menu {
   position: relative;
   flex-shrink: 0;
@@ -655,6 +641,4 @@ const statusColor: Record<PipelineStatus, string> = {
   font-weight: 500;
   color: var(--color-text);
 }
-
 </style>
-

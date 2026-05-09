@@ -2,6 +2,7 @@
 import { ref, useTemplateRef, watch } from "vue";
 import { useResumesStore, type Resume } from "@/stores/resumes";
 import BaseDialog from "@/components/ui/BaseDialog.vue";
+import BaseButton from "@/components/ui/BaseButton.vue";
 import IconDotsVertical from "@/components/icons/IconDotsVertical.vue";
 import IconDownload from "@/components/icons/IconDownload.vue";
 import IconEdit from "@/components/icons/IconEdit.vue";
@@ -141,9 +142,9 @@ async function submitRename(id: string) {
       <div class="detail-title">
         <h1>Manage Resumes</h1>
       </div>
-      <button class="btn-upload" :disabled="isUploading" @click="triggerUpload">
+      <BaseButton variant="primary" :disabled="isUploading" @click="triggerUpload">
         {{ isUploading ? "Uploading…" : "+ Upload resume" }}
-      </button>
+      </BaseButton>
     </header>
     <input
       ref="fileInput"
@@ -181,10 +182,8 @@ async function submitRename(id: string) {
                   class="rename-input"
                   @keydown.esc="cancelRename"
                 />
-                <button type="submit" class="rename-btn rename-btn--save">Save</button>
-                <button type="button" class="rename-btn rename-btn--cancel" @click="cancelRename">
-                  Cancel
-                </button>
+                <BaseButton type="submit" size="sm" variant="primary">Save</BaseButton>
+                <BaseButton type="button" size="sm" variant="secondary" @click="cancelRename">Cancel</BaseButton>
               </form>
               <p v-if="renameError" class="rename-error">{{ renameError }}</p>
             </template>
@@ -282,26 +281,6 @@ async function submitRename(id: string) {
   }
 }
 
-.btn-upload {
-  padding: 7px 14px;
-  background: var(--color-primary);
-  color: #fff;
-  border: none;
-  border-radius: var(--radius);
-  font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
-  white-space: nowrap;
-  flex-shrink: 0;
-
-  &:hover:not(:disabled) {
-    background: var(--color-primary-hover);
-  }
-  &:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-  }
-}
 
 .empty-state {
   font-size: 14px;
@@ -396,30 +375,6 @@ async function submitRename(id: string) {
   outline: none;
 }
 
-.rename-btn {
-  padding: 4px 8px;
-  font-size: 12px;
-  border-radius: var(--radius);
-  border: none;
-  cursor: pointer;
-
-  &--save {
-    background: var(--color-primary);
-    color: #fff;
-    &:hover {
-      background: var(--color-primary-hover);
-    }
-  }
-
-  &--cancel {
-    background: var(--color-border);
-    color: var(--color-text);
-    &:hover {
-      background: var(--color-text-muted);
-      color: #fff;
-    }
-  }
-}
 
 .rename-error {
   font-size: 11px;
