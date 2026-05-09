@@ -1,25 +1,16 @@
 <script setup lang="ts">
 import { computed, ref, useTemplateRef, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import {
-  SelectContent,
-  SelectItem,
-  SelectItemText,
-  SelectPortal,
-  SelectRoot,
-  SelectTrigger,
-  SelectValue,
-  SelectViewport,
-} from "radix-vue";
 import { PipelineStatus, useApplicationsStore } from "@/stores/applications";
 import { useResumesStore } from "@/stores/resumes";
 import { useAuthStore } from "@/stores/auth";
 import { getAppTitle } from "@/utils/application";
+import AppSelect from "@/components/ui/AppSelect.vue";
+import BaseButton from "@/components/ui/BaseButton.vue";
 import ProgressBar from "@/components/ui/ProgressBar.vue";
 import Avatar from "@/components/ui/Avatar.vue";
 import IconHamburger from "@/components/icons/IconHamburger.vue";
 import IconSettings from "@/components/icons/IconSettings.vue";
-import IconChevronDown from "@/components/icons/IconChevronDown.vue";
 import IconDotsVertical from "@/components/icons/IconDotsVertical.vue";
 import IconLogout from "@/components/icons/IconLogout.vue";
 
@@ -50,7 +41,6 @@ const selectedResumeId = computed({
     resumesStore.selectedResumeId = v || null;
   },
 });
-
 
 const costDisplay = computed(() => {
   const u = authStore.usage;
@@ -131,11 +121,7 @@ async function onFileSelected(event: Event) {
 
 const statusColor: Record<PipelineStatus, string> = {
   [PipelineStatus.READY]: "var(--color-success)",
-  [PipelineStatus.PENDING_APPROVAL]: "var(--color-warning)",
   [PipelineStatus.ANALYZING]: "var(--color-primary)",
-  [PipelineStatus.TAILORING]: "var(--color-primary)",
-  [PipelineStatus.VALIDATING]: "var(--color-primary)",
-  [PipelineStatus.PENDING_RETRY]: "var(--color-warning)",
   [PipelineStatus.UPLOADED]: "var(--color-text-muted)",
   [PipelineStatus.FAILED]: "var(--color-danger)",
 };
@@ -143,7 +129,10 @@ const statusColor: Record<PipelineStatus, string> = {
 
 <template>
   <div v-if="props.mobileOpen" class="mobile-backdrop" @click="emit('close')" />
-  <aside class="sidebar" :class="{ 'sidebar--collapsed': collapsed, 'sidebar--mobile-open': props.mobileOpen }">
+  <aside
+    class="sidebar"
+    :class="{ 'sidebar--collapsed': collapsed, 'sidebar--mobile-open': props.mobileOpen }"
+  >
     <!-- Header -->
     <div class="sidebar-header">
       <span v-if="!collapsed" class="sidebar-title">The Forge</span>
@@ -167,32 +156,19 @@ const statusColor: Record<PipelineStatus, string> = {
               class="sidebar-label-action"
               aria-label="Manage resumes"
               data-tooltip="Manage resumes"
-              @click="router.push({ name: 'resumes' }); emit('close')"
+              @click="
+                router.push({ name: 'resumes' });
+                emit('close');
+              "
             >
               <IconSettings />
             </button>
           </div>
-          <SelectRoot v-model="selectedResumeId">
-            <SelectTrigger class="select-trigger" aria-label="Select base resume">
-              <SelectValue placeholder="No resume" />
-              <IconChevronDown />
-            </SelectTrigger>
-            <SelectPortal>
-              <SelectContent class="select-content" position="popper" :side-offset="4">
-                <SelectViewport>
-                  <SelectItem
-                    v-for="resume in resumesStore.baseResumes"
-                    :key="resume.id"
-                    :value="resume.id"
-                    class="select-item"
-                  >
-                    <SelectItemText>{{ resume.file_name }}</SelectItemText>
-                  </SelectItem>
-                  <div v-if="hasNoBaseResumes" class="select-empty">No resumes found</div>
-                </SelectViewport>
-              </SelectContent>
-            </SelectPortal>
-          </SelectRoot>
+          <AppSelect
+            v-model="selectedResumeId"
+            :options="resumesStore.baseResumes.map((r) => ({ value: r.id, label: r.file_name }))"
+            placeholder="No resume"
+          />
 
           <input
             ref="fileInput"
@@ -213,8 +189,9 @@ const statusColor: Record<PipelineStatus, string> = {
         </div>
 
         <div class="sidebar-section">
-          <button
-            class="btn-new-app"
+          <BaseButton
+            variant="primary"
+            block
             :disabled="hasNoBaseResumes"
             :aria-label="
               hasNoBaseResumes ? 'Upload a resume to create an application' : 'New application'
@@ -224,8 +201,8 @@ const statusColor: Record<PipelineStatus, string> = {
             "
             @click="emit('new-application')"
           >
-            + New Application
-          </button>
+            New Application
+          </BaseButton>
         </div>
 
         <div class="sidebar-section sidebar-section--apps">
@@ -276,7 +253,11 @@ const statusColor: Record<PipelineStatus, string> = {
 
     <!-- Fixed footer -->
     <div class="sidebar-footer" :class="{ 'sidebar-footer--collapsed': collapsed }">
-      <Avatar :src="authStore.user?.picture_url" :name="authStore.user?.full_name ?? ''" />
+      <Avatar
+        v-if="!collapsed"
+        :src="authStore.user?.picture_url"
+        :name="authStore.user?.full_name ?? ''"
+      />
 
       <div v-if="!collapsed && costDisplay" class="footer-cost">
         <span class="cost-label">This month</span>
@@ -454,27 +435,6 @@ const statusColor: Record<PipelineStatus, string> = {
   color: var(--color-text-muted);
 }
 
-// Select
-.select-trigger {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 6px 10px;
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius);
-  font-size: 13px;
-  cursor: pointer;
-  color: var(--color-text);
-  gap: 4px;
-
-  &:focus-visible {
-    outline: 2px solid var(--color-primary);
-    outline-offset: 1px;
-  }
-}
-
 // Upload
 .file-input-hidden {
   display: none;
@@ -504,30 +464,6 @@ const statusColor: Record<PipelineStatus, string> = {
   margin-top: 4px;
   font-size: 11px;
   color: var(--color-danger);
-}
-
-// New app button
-.btn-new-app {
-  width: 100%;
-  padding: 7px 12px;
-  background: var(--color-primary);
-  color: #fff;
-  border: none;
-  border-radius: var(--radius);
-  font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
-  text-align: left;
-
-  &:hover:not(:disabled) {
-    background: var(--color-primary-hover);
-  }
-
-  &:disabled {
-    background: var(--color-text-muted);
-    cursor: not-allowed;
-    opacity: 0.6;
-  }
 }
 
 // App list
@@ -618,7 +554,6 @@ const statusColor: Record<PipelineStatus, string> = {
   }
 }
 
-
 .footer-menu {
   position: relative;
   flex-shrink: 0;
@@ -701,39 +636,5 @@ const statusColor: Record<PipelineStatus, string> = {
   font-size: 12px;
   font-weight: 500;
   color: var(--color-text);
-}
-
-</style>
-
-<!-- Portal-rendered content can't receive scoped styles -->
-<style lang="scss">
-.select-content {
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
-  z-index: 200;
-  min-width: 180px;
-  padding: 4px;
-}
-
-.select-item {
-  padding: 7px 10px;
-  font-size: 13px;
-  border-radius: var(--radius);
-  cursor: pointer;
-  user-select: none;
-  color: var(--color-text);
-  outline: none;
-
-  &[data-highlighted] {
-    background: var(--color-bg-subtle);
-  }
-}
-
-.select-empty {
-  padding: 8px 10px;
-  font-size: 13px;
-  color: var(--color-text-muted);
 }
 </style>

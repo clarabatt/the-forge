@@ -133,7 +133,7 @@ def test_generate_cover_letter_creates_and_returns_content(
     user = UserFactory()
     app = ApplicationFactory(
         user_id=user.id,
-        status=PipelineStatus.PENDING_APPROVAL,
+        status=PipelineStatus.READY,
         analysis_feedback=_FEEDBACK,
     )
     SkillFactory(application_id=app.id)
@@ -193,7 +193,7 @@ def test_generate_cover_letter_returns_questions(
     user = UserFactory()
     app = ApplicationFactory(
         user_id=user.id,
-        status=PipelineStatus.PENDING_APPROVAL,
+        status=PipelineStatus.READY,
         analysis_feedback=_FEEDBACK,
     )
     SkillFactory(application_id=app.id)

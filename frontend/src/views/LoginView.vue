@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import BaseButton from "@/components/ui/BaseButton.vue";
+
 function loginWithGoogle() {
   window.location.href = "/auth/google/login";
 }
@@ -9,7 +11,7 @@ function loginWithGoogle() {
     <div class="login-card">
       <h1 class="login-title">The Forge</h1>
       <p class="login-subtitle">AI-powered resume tailoring</p>
-      <button class="btn-google" @click="loginWithGoogle">Sign in with Google</button>
+      <BaseButton variant="primary" block @click="loginWithGoogle">Sign in with Google</BaseButton>
     </div>
   </div>
 </template>
@@ -42,25 +44,5 @@ function loginWithGoogle() {
 .login-subtitle {
   color: var(--color-text-muted);
   margin-bottom: 32px;
-}
-
-.btn-google {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  width: 100%;
-  padding: 10px 16px;
-  background: var(--color-primary);
-  color: #fff;
-  border: none;
-  border-radius: var(--radius);
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-
-  &:hover {
-    background: var(--color-primary-hover);
-  }
 }
 </style>

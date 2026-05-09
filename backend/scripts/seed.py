@@ -90,7 +90,7 @@ def seed() -> None:
                     company_name="Linear",
                     job_title="Staff Engineer",
                     job_description="Shape the future of project management tooling.",
-                    status=PipelineStatus.PENDING_APPROVAL,
+                    status=PipelineStatus.READY,
                     application_status=ApplicationStatus.applied,
                 ),
                 Application(

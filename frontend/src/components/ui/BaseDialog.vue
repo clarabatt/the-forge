@@ -7,6 +7,7 @@ import {
   DialogRoot,
   DialogTitle,
 } from "radix-vue";
+import BaseButton from "@/components/ui/BaseButton.vue";
 
 defineProps<{
   open: boolean;
@@ -46,19 +47,18 @@ defineEmits<{ "update:open": [value: boolean]; action: [] }>();
 
         <div class="dialog-actions">
           <DialogClose as-child>
-            <button class="btn btn-secondary" :disabled="closeDisabled">
+            <BaseButton variant="secondary" :disabled="closeDisabled">
               {{ closeLabel ?? "Close" }}
-            </button>
+            </BaseButton>
           </DialogClose>
-          <button
+          <BaseButton
             v-if="actionLabel"
-            class="btn"
-            :class="actionVariant === 'danger' ? 'btn-danger' : 'btn-primary'"
+            :variant="actionVariant === 'danger' ? 'danger' : 'primary'"
             :disabled="actionDisabled"
             @click="$emit('action')"
           >
             {{ actionLabel }}
-          </button>
+          </BaseButton>
         </div>
       </DialogContent>
     </DialogPortal>
@@ -131,56 +131,6 @@ defineEmits<{ "update:open": [value: boolean]; action: [] }>();
   margin-top: 4px;
 }
 
-.btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0 14px;
-  height: 32px;
-  font-size: 13px;
-  font-weight: 500;
-  border-radius: var(--radius-sm);
-  border: 1px solid transparent;
-  cursor: pointer;
-  white-space: nowrap;
-  transition:
-    background 0.1s,
-    border-color 0.1s,
-    color 0.1s;
-
-  &:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-}
-
-.btn-secondary {
-  background: var(--color-surface);
-  border-color: var(--color-border);
-  color: var(--color-text);
-
-  &:hover:not(:disabled) {
-    background: var(--color-bg-subtle);
-  }
-}
-
-.btn-primary {
-  background: var(--color-primary);
-  color: #fff;
-
-  &:hover:not(:disabled) {
-    background: var(--color-primary-hover);
-  }
-}
-
-.btn-danger {
-  background: var(--color-danger);
-  color: #fff;
-
-  &:hover:not(:disabled) {
-    opacity: 0.9;
-  }
-}
 
 @keyframes fadeIn {
   from {

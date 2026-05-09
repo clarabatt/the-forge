@@ -37,3 +37,49 @@ def test_get_me_inactive_user_returns_401(client: TestClient, UserFactory, sessi
     )
 
     assert resp.status_code == 401
+
+
+# --- GET /me/usage ---
+
+def test_get_usage_unauthenticated_returns_401(client: TestClient):
+    resp = client.get("/api/users/me/usage")
+
+    assert resp.status_code == 401
+
+
+def test_get_usage_returns_zero_when_no_logs(
+    client: TestClient, UserFactory, session_cookie
+):
+    user = UserFactory()
+
+    resp = client.get(
+        "/api/users/me/usage",
+        cookies={"session": session_cookie(str(user.id))},
+    )
+
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["cost_usd"] == 0.0
+    assert body["input_tokens"] == 0
+    assert body["output_tokens"] == 0
+    assert "monthly_cap_usd" in body
+
+
+def test_get_usage_aggregates_token_counts(
+    client: TestClient, UserFactory, LlmUsageLogFactory, session_cookie
+):
+    user = UserFactory()
+    LlmUsageLogFactory(user_id=user.id, model="gemini-2.5-flash", input_tokens=100, output_tokens=50)
+    LlmUsageLogFactory(user_id=user.id, model="gemini-2.5-flash", input_tokens=200, output_tokens=100)
+    LlmUsageLogFactory()  # another user's log — must not appear in totals
+
+    resp = client.get(
+        "/api/users/me/usage",
+        cookies={"session": session_cookie(str(user.id))},
+    )
+
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["input_tokens"] == 300
+    assert body["output_tokens"] == 150
+    assert body["cost_usd"] > 0

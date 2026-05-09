@@ -134,7 +134,7 @@ def _build_skills(
 
 
 def run_pipeline(application_id: uuid.UUID) -> None:
-    """Entry point — run JD + Resume agents then transition to PENDING_APPROVAL."""
+    """Entry point — run JD + Resume agents then transition to READY."""
     with Session(engine) as session:
         app = session.get(Application, application_id)
         if not app:
@@ -222,7 +222,7 @@ def run_pipeline(application_id: uuid.UUID) -> None:
             _log_usage(session, app, AgentName.DIFF, feedback_result["usage"])
             _log_usage(session, app, AgentName.COVER_LETTER, cl_result["usage"])
 
-            _transition(session, app, PipelineStatus.PENDING_APPROVAL)
+            _transition(session, app, PipelineStatus.READY)
 
         except Exception as exc:
             logger.exception("pipeline failed for application %s", application_id)
