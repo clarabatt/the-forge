@@ -62,6 +62,10 @@ class CreateApplicationRequest(BaseModel):
     base_resume_id: uuid.UUID
 
 
+class ReanalyzeRequest(BaseModel):
+    base_resume_id: uuid.UUID
+
+
 @router.get("/")
 def list_applications(
     session: Session = Depends(get_session),
@@ -134,6 +138,43 @@ def retry_application(
     app.status = PipelineStatus.UPLOADED
     app.company_name = "Analyzing…"
     app.job_title = "Analyzing…"
+    app.error_message = None
+    session.add(app)
+    session.commit()
+    session.refresh(app)
+
+    background_tasks.add_task(_run_pipeline, app.id)
+    return app
+
+
+@router.post("/{application_id}/reanalyze", status_code=200)
+def reanalyze_application(
+    application_id: uuid.UUID,
+    body: ReanalyzeRequest,
+    background_tasks: BackgroundTasks,
+    session: Session = Depends(get_session),
+    user: User = Depends(get_current_user),
+):
+    repo = ApplicationRepository(session)
+    app = repo.get_by_user_and_id(user.id, application_id)
+    if not app:
+        raise HTTPException(status_code=404, detail="Application not found")
+    resume = session.get(Resume, body.base_resume_id)
+    if not resume or resume.user_id != user.id:
+        raise HTTPException(status_code=404, detail="Resume not found")
+
+    # Clear previous analysis results
+    session.exec(delete(Skill).where(Skill.application_id == application_id))
+    cl_repo = CoverLetterRepository(session)
+    existing_cl = cl_repo.get_by_application(application_id)
+    if existing_cl:
+        session.delete(existing_cl)
+
+    app.base_resume_id = body.base_resume_id
+    app.status = PipelineStatus.UPLOADED
+    app.company_name = "Analyzing…"
+    app.job_title = "Analyzing…"
+    app.analysis_feedback = None
     app.error_message = None
     session.add(app)
     session.commit()

@@ -2,6 +2,7 @@
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { type CoverLetter, PipelineStatus, useApplicationsStore } from "@/stores/applications";
+import { useResumesStore } from "@/stores/resumes";
 import ApplicationActionsMenu from "@/components/ApplicationActionsMenu.vue";
 import ResumeViewer from "@/components/ResumeViewer.vue";
 import SkillsTable from "@/components/SkillsTable.vue";
@@ -13,6 +14,7 @@ import Spinner from "@/components/ui/Spinner.vue";
 const route = useRoute();
 const router = useRouter();
 const store = useApplicationsStore();
+const resumesStore = useResumesStore();
 
 let eventSource: EventSource | null = null;
 
@@ -59,6 +61,8 @@ async function load(id: string) {
 }
 
 const isRetrying = ref(false);
+const isReanalyzing = ref(false);
+const showReanalyzeConfirm = ref(false);
 const isDeleting = ref(false);
 const isDownloading = ref(false);
 const isGeneratingCL = ref(false);
@@ -79,6 +83,20 @@ async function download(format: "docx" | "pdf") {
     await store.downloadResume(id, format);
   } finally {
     isDownloading.value = false;
+  }
+}
+
+async function reanalyze() {
+  const id = route.params.id as string;
+  const resumeId = resumesStore.selectedResumeId;
+  if (!resumeId) return;
+  showReanalyzeConfirm.value = false;
+  isReanalyzing.value = true;
+  try {
+    await store.reanalyze(id, resumeId);
+    await load(id);
+  } finally {
+    isReanalyzing.value = false;
   }
 }
 
@@ -174,6 +192,7 @@ onUnmounted(closeSSE);
             @view-cover-letter="showCLModal = true"
             @generate-cover-letter="generateCoverLetter"
             @retry="retry"
+            @reanalyze="showReanalyzeConfirm = true"
             @delete="showDeleteConfirm = true"
           />
         </div>
@@ -280,6 +299,24 @@ onUnmounted(closeSSE);
     @update:open="showJdModal = $event"
   >
     <div class="jd-body">{{ jobDescription }}</div>
+  </BaseDialog>
+
+  <BaseDialog
+    title="Re-analyze with resume?"
+    :open="showReanalyzeConfirm"
+    close-label="Cancel"
+    :action-label="isReanalyzing ? 'Starting…' : 'Re-analyze'"
+    action-variant="primary"
+    :action-disabled="isReanalyzing || !resumesStore.selectedResumeId"
+    @update:open="showReanalyzeConfirm = $event"
+    @action="reanalyze"
+  >
+    <p class="dialog-body">
+      This will restart the full analysis using
+      <strong>{{ resumesStore.baseResumes.find(r => r.id === resumesStore.selectedResumeId)?.file_name ?? 'the selected resume' }}</strong>
+      as the base resume. All existing skills, feedback, and cover letter will be overwritten and
+      cannot be recovered.
+    </p>
   </BaseDialog>
 
   <BaseDialog
