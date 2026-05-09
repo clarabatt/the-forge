@@ -33,12 +33,21 @@ dev-dependencies = [
     "pytest-asyncio>=0.24.0",
     "httpx>=0.28.0",
     "respx>=0.21.0",
+    "pytest-cov>=6.0.0",
 ]
 
 [tool.pytest.ini_options]
 testpaths = ["backend/tests"]
 pythonpath = ["."]
 asyncio_mode = "auto"
+
+[tool.coverage.run]
+source = ["backend"]
+omit = ["backend/tests/*", "backend/database/migrations/*"]
+
+[tool.coverage.report]
+show_missing = true
+fail_under = 70
 
 [tool.hatch.build.targets.wheel]
 packages = ["backend"]

@@ -302,3 +302,89 @@ def test_stream_application_returns_sse_response(
     assert resp.status_code == 200
     assert "text/event-stream" in resp.headers["content-type"]
     assert "status_changed" in resp.text
+
+
+# --- Create application ---
+
+def test_create_application_unauthenticated_returns_401(client: TestClient):
+    resp = client.post(
+        "/api/applications/",
+        json={"job_description": "Build stuff.", "base_resume_id": str(uuid.uuid4())},
+    )
+
+    assert resp.status_code == 401
+
+
+def test_create_application_returns_201(
+    client: TestClient, UserFactory, ResumeFactory, session_cookie
+):
+    from unittest.mock import patch
+
+    user = UserFactory()
+    resume = ResumeFactory(user_id=user.id)
+
+    with patch("backend.routers.applications._run_pipeline"):
+        resp = client.post(
+            "/api/applications/",
+            json={"job_description": "Build cool stuff.", "base_resume_id": str(resume.id)},
+            cookies={"session": session_cookie(str(user.id))},
+        )
+
+    assert resp.status_code == 201
+    body = resp.json()
+    assert body["user_id"] == str(user.id)
+    assert body["base_resume_id"] == str(resume.id)
+    assert body["status"] == "UPLOADED"
+    assert body["company_name"] == "Analyzing…"
+    assert body["job_title"] == "Analyzing…"
+
+
+# --- Delete application ---
+
+def test_delete_application_unauthenticated_returns_401(client: TestClient):
+    resp = client.delete(f"/api/applications/{uuid.uuid4()}")
+
+    assert resp.status_code == 401
+
+
+def test_delete_application_not_found_returns_404(
+    client: TestClient, UserFactory, session_cookie
+):
+    user = UserFactory()
+
+    resp = client.delete(
+        f"/api/applications/{uuid.uuid4()}",
+        cookies={"session": session_cookie(str(user.id))},
+    )
+
+    assert resp.status_code == 404
+
+
+def test_delete_application_returns_204(
+    client: TestClient, UserFactory, ApplicationFactory, session_cookie
+):
+    user = UserFactory()
+    app = ApplicationFactory(user_id=user.id)
+
+    resp = client.delete(
+        f"/api/applications/{app.id}",
+        cookies={"session": session_cookie(str(user.id))},
+    )
+
+    assert resp.status_code == 204
+    list_resp = client.get("/api/applications/", cookies={"session": session_cookie(str(user.id))})
+    assert list_resp.json() == []
+
+
+def test_delete_application_other_user_returns_404(
+    client: TestClient, UserFactory, ApplicationFactory, session_cookie
+):
+    user = UserFactory()
+    other_app = ApplicationFactory()  # belongs to a different user
+
+    resp = client.delete(
+        f"/api/applications/{other_app.id}",
+        cookies={"session": session_cookie(str(user.id))},
+    )
+
+    assert resp.status_code == 404

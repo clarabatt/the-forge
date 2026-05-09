@@ -225,6 +225,76 @@ def test_delete_resume_of_other_user_returns_404(
     assert len(list_resp.json()) == 1
 
 
+# --- GET /{resume_id}/download ---
+
+def test_download_resume_unauthenticated_returns_401(client: TestClient):
+    import uuid
+    resp = client.get(f"/api/resumes/{uuid.uuid4()}/download")
+
+    assert resp.status_code == 401
+
+
+def test_download_resume_not_found_returns_404(
+    client: TestClient, UserFactory, session_cookie
+):
+    import uuid
+    user = UserFactory()
+
+    resp = client.get(
+        f"/api/resumes/{uuid.uuid4()}/download",
+        cookies={"session": session_cookie(str(user.id))},
+    )
+
+    assert resp.status_code == 404
+
+
+def test_download_resume_other_user_returns_404(
+    client: TestClient, UserFactory, ResumeFactory, session_cookie
+):
+    user = UserFactory()
+    other_resume = ResumeFactory()  # belongs to a different user
+
+    resp = client.get(
+        f"/api/resumes/{other_resume.id}/download",
+        cookies={"session": session_cookie(str(user.id))},
+    )
+
+    assert resp.status_code == 404
+
+
+@patch("backend.routers.resumes.download_bytes", return_value=_FAKE_DOCX)
+def test_download_resume_returns_file_bytes(
+    mock_dl, client: TestClient, UserFactory, ResumeFactory, session_cookie
+):
+    user = UserFactory()
+    resume = ResumeFactory(user_id=user.id, file_name="cv.docx")
+
+    resp = client.get(
+        f"/api/resumes/{resume.id}/download",
+        cookies={"session": session_cookie(str(user.id))},
+    )
+
+    assert resp.status_code == 200
+    assert resp.content == _FAKE_DOCX
+    assert "cv.docx" in resp.headers["content-disposition"]
+    mock_dl.assert_called_once_with(resume.bucket_key)
+
+
+@patch("backend.routers.resumes.download_bytes", side_effect=FileNotFoundError)
+def test_download_resume_returns_404_when_file_missing(
+    mock_dl, client: TestClient, UserFactory, ResumeFactory, session_cookie
+):
+    user = UserFactory()
+    resume = ResumeFactory(user_id=user.id)
+
+    resp = client.get(
+        f"/api/resumes/{resume.id}/download",
+        cookies={"session": session_cookie(str(user.id))},
+    )
+
+    assert resp.status_code == 404
+
+
 def test_delete_resume_nulls_base_resume_id_on_applications(
     client: TestClient, UserFactory, ResumeFactory, ApplicationFactory, session_cookie
 ):
