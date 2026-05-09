@@ -146,7 +146,7 @@ const statusColor: Record<PipelineStatus, string> = {
         class="sidebar-toggle"
         :aria-label="collapsed ? 'Expand sidebar' : 'Collapse sidebar'"
         :title="collapsed ? 'Expand sidebar' : 'Collapse sidebar'"
-        @click="collapsed = !collapsed"
+        @click="props.mobileOpen ? emit('close') : (collapsed = !collapsed)"
       >
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
           <rect x="1" y="3" width="14" height="1.5" rx="0.75" fill="currentColor" />
