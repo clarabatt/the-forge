@@ -134,6 +134,23 @@ export const useApplicationsStore = defineStore('applications', () => {
     return body.html ?? ''
   }
 
+  async function reanalyze(id: string, baseResumeId: string): Promise<void> {
+    const res = await fetch(`/api/applications/${id}/reanalyze`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ base_resume_id: baseResumeId }),
+    })
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}))
+      throw new Error(body.detail ?? 'Reanalyze failed')
+    }
+    const app: Application = await res.json()
+    if (current.value?.id === id) Object.assign(current.value, app)
+    const inList = applications.value.find((a) => a.id === id)
+    if (inList) Object.assign(inList, app)
+  }
+
   async function retry(id: string): Promise<void> {
     const res = await fetch(`/api/applications/${id}/retry`, {
       method: 'POST',
@@ -174,5 +191,5 @@ export const useApplicationsStore = defineStore('applications', () => {
     return es
   }
 
-  return { applications, current, isLoading, fetchAll, fetchOne, create, patch, retry, deleteApplication, downloadResume, fetchSkills, fetchResumeHtml, fetchCoverLetter, generateCoverLetter, subscribeToStatus }
+  return { applications, current, isLoading, fetchAll, fetchOne, create, patch, retry, reanalyze, deleteApplication, downloadResume, fetchSkills, fetchResumeHtml, fetchCoverLetter, generateCoverLetter, subscribeToStatus }
 })

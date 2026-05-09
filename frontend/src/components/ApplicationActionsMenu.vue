@@ -9,6 +9,13 @@ import {
 } from "radix-vue";
 import { type CoverLetter, PipelineStatus } from "@/stores/applications";
 import Spinner from "@/components/ui/Spinner.vue";
+import IconDotsVertical from "@/components/icons/IconDotsVertical.vue";
+import IconDocument from "@/components/icons/IconDocument.vue";
+import IconEnvelope from "@/components/icons/IconEnvelope.vue";
+import IconPlus from "@/components/icons/IconPlus.vue";
+import IconRefresh from "@/components/icons/IconRefresh.vue";
+import IconRetry from "@/components/icons/IconRetry.vue";
+import IconTrash from "@/components/icons/IconTrash.vue";
 
 defineProps<{
   status: PipelineStatus;
@@ -24,6 +31,7 @@ defineEmits<{
   "view-cover-letter": [];
   "generate-cover-letter": [];
   retry: [];
+  reanalyze: [];
   delete: [];
 }>();
 </script>
@@ -31,32 +39,12 @@ defineEmits<{
 <template>
   <DropdownMenuRoot>
     <DropdownMenuTrigger class="menu-trigger" aria-label="Application actions">
-      <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
-        <circle cx="8" cy="3" r="1.25" />
-        <circle cx="8" cy="8" r="1.25" />
-        <circle cx="8" cy="13" r="1.25" />
-      </svg>
+      <IconDotsVertical width="16" height="16" />
     </DropdownMenuTrigger>
     <DropdownMenuPortal>
       <DropdownMenuContent class="menu-content" :side-offset="4" align="end">
         <DropdownMenuItem class="menu-item" @select="$emit('view-jd')">
-          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
-            <rect
-              x="2"
-              y="1"
-              width="8"
-              height="10"
-              rx="1"
-              stroke="currentColor"
-              stroke-width="1.5"
-            />
-            <path
-              d="M4 4h4M4 6.5h4M4 9h2.5"
-              stroke="currentColor"
-              stroke-width="1.2"
-              stroke-linecap="round"
-            />
-          </svg>
+          <IconDocument />
           Job description
         </DropdownMenuItem>
         <DropdownMenuSeparator class="menu-separator" />
@@ -69,24 +57,7 @@ defineEmits<{
           class="menu-item"
           @select="$emit('view-cover-letter')"
         >
-          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
-            <rect
-              x="1"
-              y="2.5"
-              width="10"
-              height="7"
-              rx="1"
-              stroke="currentColor"
-              stroke-width="1.5"
-            />
-            <path
-              d="M1 4l5 3.5L11 4"
-              stroke="currentColor"
-              stroke-width="1.3"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            />
-          </svg>
+          <IconEnvelope />
           Cover letter
         </DropdownMenuItem>
         <DropdownMenuItem
@@ -95,37 +66,20 @@ defineEmits<{
           :disabled="!hasFeedback"
           @select="$emit('generate-cover-letter')"
         >
-          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
-            <path
-              d="M6 1v10M1 6h10"
-              stroke="currentColor"
-              stroke-width="1.5"
-              stroke-linecap="round"
-            />
-          </svg>
+          <IconPlus />
           Generate cover letter
         </DropdownMenuItem>
         <DropdownMenuSeparator class="menu-separator" />
+        <DropdownMenuItem class="menu-item" @select="$emit('reanalyze')">
+          <IconRefresh />
+          Re-analyze with resume
+        </DropdownMenuItem>
         <DropdownMenuItem
           class="menu-item"
           :disabled="status !== PipelineStatus.FAILED || isRetrying"
           @select="$emit('retry')"
         >
-          <svg width="12" height="12" viewBox="-2 -2 14 14" fill="none" aria-hidden="true">
-            <path
-              d="M10.5 2A5.5 5.5 0 1 0 11 6.5"
-              stroke="currentColor"
-              stroke-width="1.5"
-              stroke-linecap="round"
-            />
-            <path
-              d="M8.5 2H10.5V0"
-              stroke="currentColor"
-              stroke-width="1.5"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            />
-          </svg>
+          <IconRetry />
           Retry analysis
         </DropdownMenuItem>
         <DropdownMenuItem
@@ -133,15 +87,7 @@ defineEmits<{
           :disabled="isDeleting"
           @select="$emit('delete')"
         >
-          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
-            <path
-              d="M1.5 3h9M4.5 3V1.5h3V3M5 5.5v3M7 5.5v3M2.5 3l.5 7h6l.5-7"
-              stroke="currentColor"
-              stroke-width="1.5"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            />
-          </svg>
+          <IconTrash />
           Delete application
         </DropdownMenuItem>
       </DropdownMenuContent>

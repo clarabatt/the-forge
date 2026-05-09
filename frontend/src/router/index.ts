@@ -14,6 +14,11 @@ const router = createRouter({
           name: 'application',
           component: () => import('@/components/ApplicationDetail.vue'),
         },
+        {
+          path: 'resumes',
+          name: 'resumes',
+          component: () => import('@/views/ResumesView.vue'),
+        },
       ],
     },
     {

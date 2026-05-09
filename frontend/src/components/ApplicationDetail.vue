@@ -2,6 +2,7 @@
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { type CoverLetter, PipelineStatus, useApplicationsStore } from "@/stores/applications";
+import { useResumesStore } from "@/stores/resumes";
 import ApplicationActionsMenu from "@/components/ApplicationActionsMenu.vue";
 import ResumeViewer from "@/components/ResumeViewer.vue";
 import SkillsTable from "@/components/SkillsTable.vue";
@@ -9,10 +10,14 @@ import { getAppTitle } from "@/utils/application";
 import StatusBadge from "@/components/ui/StatusBadge.vue";
 import BaseDialog from "@/components/ui/BaseDialog.vue";
 import Spinner from "@/components/ui/Spinner.vue";
+import IconAlertCircle from "@/components/icons/IconAlertCircle.vue";
+import IconCheckCircle from "@/components/icons/IconCheckCircle.vue";
+import IconDownload from "@/components/icons/IconDownload.vue";
 
 const route = useRoute();
 const router = useRouter();
 const store = useApplicationsStore();
+const resumesStore = useResumesStore();
 
 let eventSource: EventSource | null = null;
 
@@ -59,10 +64,13 @@ async function load(id: string) {
 }
 
 const isRetrying = ref(false);
+const isReanalyzing = ref(false);
+const showReanalyzeConfirm = ref(false);
 const isDeleting = ref(false);
 const isDownloading = ref(false);
 const isGeneratingCL = ref(false);
 const clJustGenerated = ref(false);
+const clError = ref(false);
 const showDeleteConfirm = ref(false);
 const showJdModal = ref(false);
 const showCLModal = ref(false);
@@ -82,6 +90,20 @@ async function download(format: "docx" | "pdf") {
   }
 }
 
+async function reanalyze() {
+  const id = route.params.id as string;
+  const resumeId = resumesStore.selectedResumeId;
+  if (!resumeId) return;
+  showReanalyzeConfirm.value = false;
+  isReanalyzing.value = true;
+  try {
+    await store.reanalyze(id, resumeId);
+    await load(id);
+  } finally {
+    isReanalyzing.value = false;
+  }
+}
+
 async function retry() {
   const id = route.params.id as string;
   isRetrying.value = true;
@@ -96,10 +118,14 @@ async function retry() {
 async function generateCoverLetter() {
   const id = route.params.id as string;
   isGeneratingCL.value = true;
+  clError.value = false;
   try {
     coverLetter.value = await store.generateCoverLetter(id);
     clJustGenerated.value = true;
     setTimeout(() => { clJustGenerated.value = false; }, 2500);
+  } catch {
+    clError.value = true;
+    setTimeout(() => { clError.value = false; }, 4000);
   } finally {
     isGeneratingCL.value = false;
   }
@@ -150,18 +176,15 @@ onUnmounted(closeSSE);
           <StatusBadge :status="store.current.status" />
           <Transition name="cl-indicator">
             <Spinner v-if="isGeneratingCL" :size="14" class="cl-indicator" />
-            <svg
+            <IconAlertCircle
+              v-else-if="clError"
+              class="cl-indicator cl-indicator--error"
+              title="Failed to generate cover letter"
+            />
+            <IconCheckCircle
               v-else-if="clJustGenerated"
               class="cl-indicator cl-indicator--done"
-              width="14"
-              height="14"
-              viewBox="0 0 14 14"
-              fill="none"
-              aria-hidden="true"
-            >
-              <circle cx="7" cy="7" r="6" stroke="currentColor" stroke-width="1.5" />
-              <path d="M4.5 7l2 2 3-3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
-            </svg>
+            />
           </Transition>
           <ApplicationActionsMenu
             :status="store.current.status"
@@ -174,6 +197,7 @@ onUnmounted(closeSSE);
             @view-cover-letter="showCLModal = true"
             @generate-cover-letter="generateCoverLetter"
             @retry="retry"
+            @reanalyze="showReanalyzeConfirm = true"
             @delete="showDeleteConfirm = true"
           />
         </div>
@@ -202,42 +226,12 @@ onUnmounted(closeSSE);
         <div class="detail-actions">
           <div class="btn-group">
             <button class="btn-group__btn" :disabled="isDownloading" @click="download('docx')">
-              <svg width="13" height="13" viewBox="0 0 13 13" fill="none" aria-hidden="true">
-                <path
-                  d="M6.5 1v8M3.5 6l3 3 3-3"
-                  stroke="currentColor"
-                  stroke-width="1.5"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                />
-                <path
-                  d="M1.5 10.5v1h10v-1"
-                  stroke="currentColor"
-                  stroke-width="1.5"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                />
-              </svg>
+              <IconDownload />
               DOCX
             </button>
             <div class="btn-group__divider" />
             <button class="btn-group__btn" :disabled="isDownloading" @click="download('pdf')">
-              <svg width="13" height="13" viewBox="0 0 13 13" fill="none" aria-hidden="true">
-                <path
-                  d="M6.5 1v8M3.5 6l3 3 3-3"
-                  stroke="currentColor"
-                  stroke-width="1.5"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                />
-                <path
-                  d="M1.5 10.5v1h10v-1"
-                  stroke="currentColor"
-                  stroke-width="1.5"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                />
-              </svg>
+              <IconDownload />
               PDF
             </button>
           </div>
@@ -280,6 +274,24 @@ onUnmounted(closeSSE);
     @update:open="showJdModal = $event"
   >
     <div class="jd-body">{{ jobDescription }}</div>
+  </BaseDialog>
+
+  <BaseDialog
+    title="Re-analyze with resume?"
+    :open="showReanalyzeConfirm"
+    close-label="Cancel"
+    :action-label="isReanalyzing ? 'Starting…' : 'Re-analyze'"
+    action-variant="primary"
+    :action-disabled="isReanalyzing || !resumesStore.selectedResumeId"
+    @update:open="showReanalyzeConfirm = $event"
+    @action="reanalyze"
+  >
+    <p class="dialog-body">
+      This will restart the full analysis using
+      <strong>{{ resumesStore.baseResumes.find(r => r.id === resumesStore.selectedResumeId)?.file_name ?? 'the selected resume' }}</strong>
+      as the base resume. All existing skills, feedback, and cover letter will be overwritten and
+      cannot be recovered.
+    </p>
   </BaseDialog>
 
   <BaseDialog
@@ -381,6 +393,10 @@ onUnmounted(closeSSE);
 
   &--done {
     color: var(--color-success, #22c55e);
+  }
+
+  &--error {
+    color: var(--color-danger);
   }
 }
 

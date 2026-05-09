@@ -1,26 +1,14 @@
 <script setup lang="ts">
+import IconCheck from "@/components/icons/IconCheck.vue";
+import IconX from "@/components/icons/IconX.vue";
+
 defineProps<{ found: boolean }>()
 </script>
 
 <template>
   <span :class="found ? 'badge-found' : 'badge-missing'">
-    <svg v-if="found" width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true">
-      <path
-        d="M2 5l2.5 2.5L8 3"
-        stroke="currentColor"
-        stroke-width="1.5"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-      />
-    </svg>
-    <svg v-else width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true">
-      <path
-        d="M2.5 2.5l5 5M7.5 2.5l-5 5"
-        stroke="currentColor"
-        stroke-width="1.5"
-        stroke-linecap="round"
-      />
-    </svg>
+    <IconCheck v-if="found" />
+    <IconX v-else />
     {{ found ? 'Yes' : 'No' }}
   </span>
 </template>
