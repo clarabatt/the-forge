@@ -43,6 +43,7 @@ class AgentName(str, Enum):
     JUDGE_RETRY = "JUDGE_RETRY"
     COVER_LETTER = "COVER_LETTER"
     SKILL_VERIFIER = "SKILL_VERIFIER"
+    RESUME_COACHING = "RESUME_COACHING"
 
 
 class ChatRole(str, Enum):
@@ -105,6 +106,8 @@ class Resume(SQLModel, table=True):
     version_number: int = Field(default=1)
     is_latest: bool = Field(default=True, index=True)
     template_version: str = Field(default="v1")
+    coaching_status: str = Field(default="pending")
+    coaching_analysis: Optional[str] = None
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
     user: Optional[User] = Relationship(back_populates="resumes")

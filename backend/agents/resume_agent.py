@@ -1,12 +1,12 @@
 """Resume Agent — parses raw resume text into structured accomplishment blocks."""
 
-import json
 import logging
 import uuid
 
 from google import genai
 from google.genai import types
 
+from backend.agents.utils import parse_json_response
 from backend.config import settings
 
 logger = logging.getLogger(__name__)
@@ -78,10 +78,18 @@ def run(raw_text: str) -> dict:
             system_instruction=_SYSTEM_PROMPT,
             response_mime_type="application/json",
             temperature=0.0,
+            max_output_tokens=16384,
         ),
     )
 
-    result = json.loads(response.text)
+    candidate = response.candidates[0] if response.candidates else None
+    finish_reason = candidate.finish_reason if candidate else None
+    truncated = False
+    if finish_reason and str(finish_reason) not in ("FinishReason.STOP", "1", "STOP"):
+        logger.warning("resume_agent finish_reason=%s — response may be truncated", finish_reason)
+        truncated = True
+
+    result = parse_json_response(response.text, repair_truncated=truncated)
     blocks = result.get("blocks", [])
 
     for block in blocks:

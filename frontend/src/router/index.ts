@@ -19,6 +19,11 @@ const router = createRouter({
           name: 'resumes',
           component: () => import('@/views/ResumesView.vue'),
         },
+        {
+          path: 'resumes/:id',
+          name: 'resume-detail',
+          component: () => import('@/views/ResumeDetailView.vue'),
+        },
       ],
     },
     {

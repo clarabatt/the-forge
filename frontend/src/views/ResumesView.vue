@@ -1,75 +1,32 @@
 <script setup lang="ts">
-import { ref, useTemplateRef, watch } from "vue";
+import { ref } from "vue";
+import { useRouter } from "vue-router";
 import { useResumesStore, type Resume } from "@/stores/resumes";
+import { useFileUpload } from "@/composables/useFileUpload";
 import BaseDialog from "@/components/ui/BaseDialog.vue";
 import BaseButton from "@/components/ui/BaseButton.vue";
-import IconDotsVertical from "@/components/icons/IconDotsVertical.vue";
-import IconDownload from "@/components/icons/IconDownload.vue";
-import IconEdit from "@/components/icons/IconEdit.vue";
-import IconTrashBin from "@/components/icons/IconTrashBin.vue";
+import CoachingStatusChip from "@/components/ui/CoachingStatusChip.vue";
+import InlineEditForm from "@/components/ui/InlineEditForm.vue";
+import ResumeActionsMenu from "@/components/ResumeActionsMenu.vue";
 
+const router = useRouter();
 const resumesStore = useResumesStore();
 
 // --- Upload ---
-const fileInput = useTemplateRef<HTMLInputElement>("fileInput");
-const isUploading = ref(false);
-const uploadError = ref<string | null>(null);
-
-function triggerUpload() {
-  uploadError.value = null;
-  fileInput.value?.click();
-}
-
-async function onFileSelected(event: Event) {
-  const file = (event.target as HTMLInputElement).files?.[0];
-  if (!file) return;
-  isUploading.value = true;
-  uploadError.value = null;
-  const form = new FormData();
-  form.append("file", file);
-  try {
-    const res = await fetch("/api/resumes/", {
-      method: "POST",
-      credentials: "include",
-      body: form,
-    });
-    const body = await res.json().catch(() => ({}));
-    if (!res.ok) {
-      uploadError.value = body.detail ?? "Upload failed";
-      return;
+const { fileInput, isUploading, uploadError, triggerUpload, onFileSelected } = useFileUpload(
+  async (body) => {
+    if (body?.id) {
+      resumesStore.selectedResumeId = body.id;
+      router.push({ name: "resume-detail", params: { id: body.id } });
     }
-    await resumesStore.fetchAll();
-    if (body?.id) resumesStore.selectedResumeId = body.id;
-  } catch {
-    uploadError.value = "Network error — try again";
-  } finally {
-    isUploading.value = false;
-    if (fileInput.value) fileInput.value.value = "";
-  }
-}
-
-// --- 3-dot menu ---
-const openMenuId = ref<string | null>(null);
-
-function toggleMenu(id: string) {
-  openMenuId.value = openMenuId.value === id ? null : id;
-}
-
-function onClickOutside(e: MouseEvent) {
-  const target = e.target as HTMLElement;
-  if (!target.closest(".row-menu")) openMenuId.value = null;
-}
-
-watch(openMenuId, (id) => {
-  if (id) document.addEventListener("mousedown", onClickOutside);
-  else document.removeEventListener("mousedown", onClickOutside);
-});
+  },
+);
 
 // --- Download ---
 const downloadingId = ref<string | null>(null);
+const deleteError = ref<string | null>(null);
 
 async function downloadResume(resume: Resume) {
-  openMenuId.value = null;
   downloadingId.value = resume.id;
   try {
     await resumesStore.downloadResume(resume.id, resume.file_name);
@@ -80,11 +37,9 @@ async function downloadResume(resume: Resume) {
 
 // --- Delete ---
 const deletingId = ref<string | null>(null);
-const deleteError = ref<string | null>(null);
 const resumeToDelete = ref<Resume | null>(null);
 
 function promptDelete(resume: Resume) {
-  openMenuId.value = null;
   resumeToDelete.value = resume;
 }
 
@@ -107,15 +62,11 @@ async function confirmDelete() {
 const renamingId = ref<string | null>(null);
 const renameValue = ref("");
 const renameError = ref<string | null>(null);
-const renameInput = ref<HTMLInputElement | null>(null);
 
 function startRename(resume: Resume) {
-  openMenuId.value = null;
   renamingId.value = resume.id;
   renameValue.value = resume.file_name;
   renameError.value = null;
-  // focus input on next tick
-  setTimeout(() => renameInput.value?.select(), 30);
 }
 
 function cancelRename() {
@@ -147,7 +98,7 @@ async function submitRename(id: string) {
       </BaseButton>
     </header>
     <input
-      ref="fileInput"
+      :ref="(el) => (fileInput = el as HTMLInputElement | null)"
       type="file"
       accept=".docx"
       class="file-input-hidden"
@@ -164,6 +115,7 @@ async function submitRename(id: string) {
           <th>File name</th>
           <th>Version</th>
           <th>Uploaded</th>
+          <th>Coaching</th>
           <th></th>
         </tr>
       </thead>
@@ -174,47 +126,33 @@ async function submitRename(id: string) {
           :class="{ 'row--busy': deletingId === resume.id || downloadingId === resume.id }"
         >
           <td class="cell-name">
-            <template v-if="renamingId === resume.id">
-              <form class="rename-form" @submit.prevent="submitRename(resume.id)">
-                <input
-                  ref="renameInput"
-                  v-model="renameValue"
-                  class="rename-input"
-                  @keydown.esc="cancelRename"
-                />
-                <BaseButton type="submit" size="sm" variant="primary">Save</BaseButton>
-                <BaseButton type="button" size="sm" variant="secondary" @click="cancelRename">Cancel</BaseButton>
-              </form>
-              <p v-if="renameError" class="rename-error">{{ renameError }}</p>
-            </template>
-            <span v-else class="file-name">{{ resume.file_name }}</span>
+            <InlineEditForm
+              v-if="renamingId === resume.id"
+              v-model="renameValue"
+              :error="renameError"
+              @submit="submitRename(resume.id)"
+              @cancel="cancelRename"
+            />
+            <RouterLink
+              v-else
+              class="file-name file-name--link"
+              :to="{ name: 'resume-detail', params: { id: resume.id } }"
+            >
+              {{ resume.file_name }}
+            </RouterLink>
           </td>
           <td class="cell-meta">v{{ resume.version_number }}</td>
           <td class="cell-meta">{{ new Date(resume.created_at).toLocaleDateString() }}</td>
+          <td class="cell-coaching">
+            <CoachingStatusChip :status="resume.coaching_status" compact />
+          </td>
           <td class="cell-actions">
-            <div class="row-menu">
-              <button
-                class="menu-trigger"
-                :aria-label="`Actions for ${resume.file_name}`"
-                @click="toggleMenu(resume.id)"
-              >
-                <IconDotsVertical width="14" height="14" />
-              </button>
-              <div v-if="openMenuId === resume.id" class="menu-dropdown">
-                <button class="menu-item" @click="downloadResume(resume)">
-                  <IconDownload />
-                  Download
-                </button>
-                <button class="menu-item" @click="startRename(resume)">
-                  <IconEdit />
-                  Rename
-                </button>
-                <button class="menu-item menu-item--danger" @click="promptDelete(resume)">
-                  <IconTrashBin />
-                  Delete
-                </button>
-              </div>
-            </div>
+            <ResumeActionsMenu
+              :resume="resume"
+              @download="downloadResume(resume)"
+              @rename="startRename(resume)"
+              @delete="promptDelete(resume)"
+            />
           </td>
         </tr>
       </tbody>
@@ -227,16 +165,11 @@ async function submitRename(id: string) {
     action-label="Delete"
     action-variant="danger"
     close-label="Cancel"
-    @update:open="
-      (v) => {
-        if (!v) resumeToDelete = null;
-      }
-    "
+    @update:open="(v) => { if (!v) resumeToDelete = null; }"
     @action="confirmDelete"
   >
     <p class="dialog-body">
-      Are you sure you want to delete <strong>{{ resumeToDelete?.file_name }}</strong
-      >?
+      Are you sure you want to delete <strong>{{ resumeToDelete?.file_name }}</strong>?
       <br />
       The underlying file will be kept to preserve any existing applications that depend on it.
     </p>
@@ -281,7 +214,6 @@ async function submitRename(id: string) {
   }
 }
 
-
 .empty-state {
   font-size: 14px;
   color: var(--color-text-muted);
@@ -308,12 +240,8 @@ async function submitRename(id: string) {
     padding: 0 12px 8px;
     border-bottom: 1px solid var(--color-border);
 
-    &:first-child {
-      padding-left: 0;
-    }
-    &:last-child {
-      padding-right: 0;
-    }
+    &:first-child { padding-left: 0; }
+    &:last-child { padding-right: 0; }
   }
 
   td {
@@ -321,12 +249,8 @@ async function submitRename(id: string) {
     border-bottom: 1px solid var(--color-border);
     vertical-align: middle;
 
-    &:first-child {
-      padding-left: 0;
-    }
-    &:last-child {
-      padding-right: 0;
-    }
+    &:first-child { padding-left: 0; }
+    &:last-child { padding-right: 0; }
   }
 
   tr:last-child td {
@@ -346,6 +270,20 @@ async function submitRename(id: string) {
 .file-name {
   color: var(--color-text);
   font-weight: 500;
+
+  &--link {
+    color: var(--color-text);
+    text-decoration: none;
+
+    &:hover {
+      color: var(--color-primary);
+      text-decoration: underline;
+    }
+  }
+}
+
+.cell-coaching {
+  white-space: nowrap;
 }
 
 .cell-meta {
@@ -355,92 +293,5 @@ async function submitRename(id: string) {
 
 .cell-actions {
   white-space: nowrap;
-}
-
-// Rename inline form
-.rename-form {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.rename-input {
-  flex: 1;
-  padding: 4px 8px;
-  font-size: 13px;
-  border: 1px solid var(--color-primary);
-  border-radius: var(--radius);
-  background: var(--color-surface);
-  color: var(--color-text);
-  outline: none;
-}
-
-
-.rename-error {
-  font-size: 11px;
-  color: var(--color-danger);
-  margin-top: 3px;
-}
-
-// Row 3-dot menu
-.row-menu {
-  position: relative;
-  display: flex;
-  justify-content: flex-end;
-}
-
-.menu-trigger {
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 4px 6px;
-  border-radius: var(--radius);
-  color: var(--color-text-muted);
-  display: flex;
-  align-items: center;
-
-  &:hover {
-    background: var(--color-border);
-    color: var(--color-text);
-  }
-}
-
-.menu-dropdown {
-  position: absolute;
-  top: calc(100% + 4px);
-  right: 0;
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
-  padding: 4px;
-  min-width: 130px;
-  z-index: 100;
-}
-
-.menu-item {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 7px 10px;
-  background: none;
-  border: none;
-  border-radius: var(--radius);
-  font-size: 13px;
-  cursor: pointer;
-  color: var(--color-text);
-  text-align: left;
-
-  &:hover {
-    background: var(--color-bg-subtle);
-  }
-
-  &--danger {
-    color: var(--color-danger);
-    &:hover {
-      background: color-mix(in srgb, var(--color-danger) 10%, transparent);
-    }
-  }
 }
 </style>
