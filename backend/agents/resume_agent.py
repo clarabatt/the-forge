@@ -84,10 +84,12 @@ def run(raw_text: str) -> dict:
 
     candidate = response.candidates[0] if response.candidates else None
     finish_reason = candidate.finish_reason if candidate else None
+    truncated = False
     if finish_reason and str(finish_reason) not in ("FinishReason.STOP", "1", "STOP"):
         logger.warning("resume_agent finish_reason=%s — response may be truncated", finish_reason)
+        truncated = True
 
-    result = parse_json_response(response.text)
+    result = parse_json_response(response.text, repair_truncated=truncated)
     blocks = result.get("blocks", [])
 
     for block in blocks:
