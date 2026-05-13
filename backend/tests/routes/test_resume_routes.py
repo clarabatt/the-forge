@@ -66,7 +66,8 @@ def test_upload_resume_rejects_non_docx(client: TestClient, UserFactory, session
 
 @patch("backend.routers.resumes.upload_bytes", return_value="resumes/fake/key.docx")
 @patch("backend.routers.resumes._extract_text", return_value="Extracted resume text")
-def test_upload_resume_creates_db_row(mock_extract, mock_upload, client: TestClient, UserFactory, session_cookie):
+@patch("backend.routers.resumes._run_coaching")
+def test_upload_resume_creates_db_row(mock_coaching, mock_extract, mock_upload, client: TestClient, UserFactory, session_cookie):
     user = UserFactory()
 
     resp = client.post(
@@ -83,6 +84,22 @@ def test_upload_resume_creates_db_row(mock_extract, mock_upload, client: TestCli
     assert body["version_number"] == 1
     assert body["raw_text"] == "Extracted resume text"
     mock_upload.assert_called_once()
+
+
+@patch("backend.routers.resumes.upload_bytes", return_value="resumes/fake/key.docx")
+@patch("backend.routers.resumes._extract_text", return_value="text")
+@patch("backend.routers.resumes._run_coaching")
+def test_upload_resume_sets_coaching_status_analyzing(mock_coaching, mock_extract, mock_upload, client: TestClient, UserFactory, session_cookie):
+    user = UserFactory()
+
+    resp = client.post(
+        "/api/resumes/",
+        files={"file": _docx_file("cv.docx")},
+        cookies={"session": session_cookie(str(user.id))},
+    )
+
+    assert resp.status_code == 201
+    assert resp.json()["coaching_status"] == "analyzing"
 
 
 @patch("backend.routers.resumes.upload_bytes", return_value="resumes/fake/key.docx")
@@ -289,6 +306,127 @@ def test_download_resume_returns_404_when_file_missing(
 
     resp = client.get(
         f"/api/resumes/{resume.id}/download",
+        cookies={"session": session_cookie(str(user.id))},
+    )
+
+    assert resp.status_code == 404
+
+
+# --- GET /{resume_id} ---
+
+def test_get_resume_unauthenticated_returns_401(client: TestClient):
+    import uuid
+    resp = client.get(f"/api/resumes/{uuid.uuid4()}")
+
+    assert resp.status_code == 401
+
+
+def test_get_resume_not_found_returns_404(client: TestClient, UserFactory, session_cookie):
+    import uuid
+    user = UserFactory()
+
+    resp = client.get(
+        f"/api/resumes/{uuid.uuid4()}",
+        cookies={"session": session_cookie(str(user.id))},
+    )
+
+    assert resp.status_code == 404
+
+
+def test_get_resume_other_user_returns_404(
+    client: TestClient, UserFactory, ResumeFactory, session_cookie
+):
+    user = UserFactory()
+    other_resume = ResumeFactory()
+
+    resp = client.get(
+        f"/api/resumes/{other_resume.id}",
+        cookies={"session": session_cookie(str(user.id))},
+    )
+
+    assert resp.status_code == 404
+
+
+def test_get_resume_returns_resume(
+    client: TestClient, UserFactory, ResumeFactory, session_cookie
+):
+    user = UserFactory()
+    resume = ResumeFactory(user_id=user.id, file_name="my_cv.docx")
+
+    resp = client.get(
+        f"/api/resumes/{resume.id}",
+        cookies={"session": session_cookie(str(user.id))},
+    )
+
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["id"] == str(resume.id)
+    assert body["file_name"] == "my_cv.docx"
+
+
+# --- GET /{resume_id}/html ---
+
+def test_get_resume_html_unauthenticated_returns_401(client: TestClient):
+    import uuid
+    resp = client.get(f"/api/resumes/{uuid.uuid4()}/html")
+
+    assert resp.status_code == 401
+
+
+def test_get_resume_html_not_found_returns_404(client: TestClient, UserFactory, session_cookie):
+    import uuid
+    user = UserFactory()
+
+    resp = client.get(
+        f"/api/resumes/{uuid.uuid4()}/html",
+        cookies={"session": session_cookie(str(user.id))},
+    )
+
+    assert resp.status_code == 404
+
+
+def test_get_resume_html_other_user_returns_404(
+    client: TestClient, UserFactory, ResumeFactory, session_cookie
+):
+    user = UserFactory()
+    other_resume = ResumeFactory()
+
+    resp = client.get(
+        f"/api/resumes/{other_resume.id}/html",
+        cookies={"session": session_cookie(str(user.id))},
+    )
+
+    assert resp.status_code == 404
+
+
+@patch("backend.routers.resumes.download_bytes", return_value=_FAKE_DOCX)
+@patch("backend.routers.resumes.mammoth.convert_to_html")
+def test_get_resume_html_returns_html(
+    mock_convert, mock_dl, client: TestClient, UserFactory, ResumeFactory, session_cookie
+):
+    mock_convert.return_value.value = "<p>Resume content</p>"
+    user = UserFactory()
+    resume = ResumeFactory(user_id=user.id)
+
+    resp = client.get(
+        f"/api/resumes/{resume.id}/html",
+        cookies={"session": session_cookie(str(user.id))},
+    )
+
+    assert resp.status_code == 200
+    assert resp.json()["html"] == "<p>Resume content</p>"
+    mock_dl.assert_called_once_with(resume.bucket_key)
+
+
+@patch("backend.routers.resumes.download_bytes", side_effect=FileNotFoundError)
+def test_get_resume_html_returns_404_when_file_missing(
+    mock_dl, client: TestClient, UserFactory, ResumeFactory, session_cookie
+):
+    user = UserFactory()
+    resume = ResumeFactory(user_id=user.id)
+
+    resp = client.get(
+        f"/api/resumes/{resume.id}/html",
         cookies={"session": session_cookie(str(user.id))},
     )
 
