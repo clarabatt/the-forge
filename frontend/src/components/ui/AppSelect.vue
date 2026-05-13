@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { computed } from "vue";
 import {
   SelectContent,
   SelectItem,
@@ -17,10 +18,14 @@ defineProps<{
 }>();
 
 const model = defineModel<string | null>();
+const selectValue = computed({
+  get: () => model.value ?? undefined,
+  set: (v: string | undefined) => { model.value = v ?? null; },
+});
 </script>
 
 <template>
-  <SelectRoot v-model="model">
+  <SelectRoot v-model="selectValue">
     <SelectTrigger class="app-select-trigger">
       <SelectValue :placeholder="placeholder ?? 'Select…'" />
       <IconChevronDown />
