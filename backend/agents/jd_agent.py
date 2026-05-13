@@ -1,7 +1,8 @@
 """JD Agent — extracts structured skill data from a raw job description."""
 
-import json
 import logging
+
+from backend.agents.utils import parse_json_response
 
 from google import genai
 from google.genai import types
@@ -67,7 +68,7 @@ def run(job_description: str) -> dict:
         ),
     )
 
-    result = json.loads(response.text)
+    result = parse_json_response(response.text)
 
     return {
         "company_name": result.get("company_name", "Unknown Company"),

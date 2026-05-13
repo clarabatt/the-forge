@@ -1,6 +1,35 @@
 import { defineStore } from "pinia";
 import { computed, ref } from "vue";
 
+export interface CoachingBullet {
+  text: string;
+  framework_score: "weak" | "partial" | "strong";
+  issues: string[];
+  coaching_questions: string[];
+}
+
+export interface CoachingExperienceBlock {
+  employer: string;
+  date_range: string | null;
+  bullets: CoachingBullet[];
+}
+
+export interface CoachingAnalysis {
+  overall_score: "needs_work" | "decent" | "strong";
+  global_issues: string[];
+  summary_feedback: {
+    detected_text: string | null;
+    issues: string[];
+    coaching_questions: string[];
+  };
+  skills_feedback: {
+    detected_skills: string[];
+    issues: string[];
+    coaching_questions: string[];
+  };
+  experience_blocks: CoachingExperienceBlock[];
+}
+
 export interface Resume {
   id: string;
   file_name: string;
@@ -11,6 +40,8 @@ export interface Resume {
   raw_text: string | null;
   user_id: string;
   application_id: string | null;
+  coaching_status: "pending" | "analyzing" | "done" | "failed";
+  coaching_analysis: string | null;
   created_at: string;
 }
 
@@ -27,6 +58,23 @@ export const useResumesStore = defineStore("resumes", () => {
     if (!selectedResumeId.value) {
       selectedResumeId.value = baseResumes.value[0]?.id ?? null;
     }
+  }
+
+  async function fetchOne(id: string): Promise<Resume | null> {
+    const res = await fetch(`/api/resumes/${id}`, { credentials: "include" });
+    if (!res.ok) return null;
+    const resume: Resume = await res.json();
+    const idx = resumes.value.findIndex((r) => r.id === id);
+    if (idx !== -1) resumes.value[idx] = resume;
+    else resumes.value.push(resume);
+    return resume;
+  }
+
+  async function fetchHtml(id: string): Promise<string | null> {
+    const res = await fetch(`/api/resumes/${id}/html`, { credentials: "include" });
+    if (!res.ok) return null;
+    const body = await res.json();
+    return body.html ?? null;
   }
 
   async function deleteResume(id: string) {
@@ -65,5 +113,25 @@ export const useResumesStore = defineStore("resumes", () => {
     if (idx !== -1) resumes.value[idx] = updated;
   }
 
-  return { resumes, baseResumes, selectedResumeId, fetchAll, deleteResume, renameResume, downloadResume };
+  function getCoachingAnalysis(resume: Resume): CoachingAnalysis | null {
+    if (!resume.coaching_analysis) return null;
+    try {
+      return JSON.parse(resume.coaching_analysis) as CoachingAnalysis;
+    } catch {
+      return null;
+    }
+  }
+
+  return {
+    resumes,
+    baseResumes,
+    selectedResumeId,
+    fetchAll,
+    fetchOne,
+    fetchHtml,
+    deleteResume,
+    renameResume,
+    downloadResume,
+    getCoachingAnalysis,
+  };
 });

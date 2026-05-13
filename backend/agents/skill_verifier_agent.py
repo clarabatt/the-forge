@@ -3,6 +3,8 @@
 import json
 import logging
 
+from backend.agents.utils import parse_json_response
+
 from google import genai
 from google.genai import types
 
@@ -70,7 +72,7 @@ def run(skills_to_verify: list[str], resume_blocks: list[dict]) -> dict:
         ),
     )
 
-    result = json.loads(response.text)
+    result = parse_json_response(response.text)
     verifications = result.get("verifications", [])
 
     # Warn if the model dropped or added entries

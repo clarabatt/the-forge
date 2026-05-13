@@ -1,7 +1,8 @@
+import io
 import uuid
 
 import mammoth
-from fastapi import APIRouter, Depends, HTTPException, UploadFile
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, UploadFile
 from fastapi.responses import Response
 from pydantic import BaseModel
 from sqlmodel import Session
@@ -22,7 +23,6 @@ _MAX_SIZE_BYTES = 10 * 1024 * 1024  # 10 MB
 
 
 def _extract_text(data: bytes) -> str:
-    import io
     result = mammoth.extract_raw_text(io.BytesIO(data))
     return result.value.strip()
 
@@ -36,9 +36,15 @@ def list_resumes(
     return repo.list_by_user(user.id)
 
 
+def _run_coaching(resume_id: uuid.UUID) -> None:
+    from backend.agents.coaching_runner import run_coaching
+    run_coaching(resume_id)
+
+
 @router.post("/", status_code=201)
 async def upload_resume(
     file: UploadFile,
+    background_tasks: BackgroundTasks,
     session: Session = Depends(get_session),
     user: User = Depends(get_current_user),
 ):
@@ -75,11 +81,46 @@ async def upload_resume(
         version_number=next_version,
         raw_text=raw_text,
         template_version=settings.current_template_version,
+        coaching_status="analyzing",
     )
     session.add(resume)
     session.commit()
     session.refresh(resume)
+
+    background_tasks.add_task(_run_coaching, resume.id)
+
     return resume
+
+
+@router.get("/{resume_id}")
+def get_resume(
+    resume_id: uuid.UUID,
+    session: Session = Depends(get_session),
+    user: User = Depends(get_current_user),
+):
+    repo = ResumeRepository(session)
+    resume = repo.get_by_id(resume_id)
+    if not resume or resume.user_id != user.id:
+        raise HTTPException(status_code=404, detail="Resume not found")
+    return resume
+
+
+@router.get("/{resume_id}/html")
+def get_resume_html(
+    resume_id: uuid.UUID,
+    session: Session = Depends(get_session),
+    user: User = Depends(get_current_user),
+):
+    repo = ResumeRepository(session)
+    resume = repo.get_by_id(resume_id)
+    if not resume or resume.user_id != user.id:
+        raise HTTPException(status_code=404, detail="Resume not found")
+    try:
+        data = download_bytes(resume.bucket_key)
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail="Resume file not found in storage")
+    html = mammoth.convert_to_html(io.BytesIO(data)).value
+    return {"html": html}
 
 
 @router.get("/{resume_id}/download")

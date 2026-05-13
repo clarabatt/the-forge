@@ -3,6 +3,8 @@
 import json
 import logging
 
+from backend.agents.utils import parse_json_response
+
 from google import genai
 from google.genai import types
 
@@ -86,7 +88,7 @@ def run(
         ),
     )
 
-    result = json.loads(response.text)
+    result = parse_json_response(response.text)
 
     return {
         "overall_assessment": result.get("overall_assessment", ""),

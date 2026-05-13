@@ -1,13 +1,17 @@
 <script setup lang="ts">
 import { ref, useTemplateRef, watch } from "vue";
+import { useRouter } from "vue-router";
 import { useResumesStore, type Resume } from "@/stores/resumes";
 import BaseDialog from "@/components/ui/BaseDialog.vue";
 import BaseButton from "@/components/ui/BaseButton.vue";
 import IconDotsVertical from "@/components/icons/IconDotsVertical.vue";
 import IconDownload from "@/components/icons/IconDownload.vue";
 import IconEdit from "@/components/icons/IconEdit.vue";
+import IconLightbulb from "@/components/icons/IconLightbulb.vue";
 import IconTrashBin from "@/components/icons/IconTrashBin.vue";
+import Spinner from "@/components/ui/Spinner.vue";
 
+const router = useRouter();
 const resumesStore = useResumesStore();
 
 // --- Upload ---
@@ -39,7 +43,10 @@ async function onFileSelected(event: Event) {
       return;
     }
     await resumesStore.fetchAll();
-    if (body?.id) resumesStore.selectedResumeId = body.id;
+    if (body?.id) {
+      resumesStore.selectedResumeId = body.id;
+      router.push({ name: "resume-detail", params: { id: body.id } });
+    }
   } catch {
     uploadError.value = "Network error — try again";
   } finally {
@@ -164,6 +171,7 @@ async function submitRename(id: string) {
           <th>File name</th>
           <th>Version</th>
           <th>Uploaded</th>
+          <th>Coaching</th>
           <th></th>
         </tr>
       </thead>
@@ -187,10 +195,33 @@ async function submitRename(id: string) {
               </form>
               <p v-if="renameError" class="rename-error">{{ renameError }}</p>
             </template>
-            <span v-else class="file-name">{{ resume.file_name }}</span>
+            <RouterLink
+              v-else
+              class="file-name file-name--link"
+              :to="{ name: 'resume-detail', params: { id: resume.id } }"
+            >
+              {{ resume.file_name }}
+            </RouterLink>
           </td>
           <td class="cell-meta">v{{ resume.version_number }}</td>
           <td class="cell-meta">{{ new Date(resume.created_at).toLocaleDateString() }}</td>
+          <td class="cell-coaching">
+            <span
+              class="coaching-chip"
+              :class="`coaching-chip--${resume.coaching_status}`"
+            >
+              <Spinner v-if="resume.coaching_status === 'analyzing'" :size="10" />
+              {{
+                resume.coaching_status === "analyzing"
+                  ? "Analyzing…"
+                  : resume.coaching_status === "done"
+                    ? "Ready"
+                    : resume.coaching_status === "failed"
+                      ? "Failed"
+                      : "Pending"
+              }}
+            </span>
+          </td>
           <td class="cell-actions">
             <div class="row-menu">
               <button
@@ -201,6 +232,14 @@ async function submitRename(id: string) {
                 <IconDotsVertical width="14" height="14" />
               </button>
               <div v-if="openMenuId === resume.id" class="menu-dropdown">
+                <RouterLink
+                  class="menu-item"
+                  :to="{ name: 'resume-detail', params: { id: resume.id } }"
+                  @click="openMenuId = null"
+                >
+                  <IconLightbulb />
+                  View coaching
+                </RouterLink>
                 <button class="menu-item" @click="downloadResume(resume)">
                   <IconDownload />
                   Download
@@ -346,6 +385,48 @@ async function submitRename(id: string) {
 .file-name {
   color: var(--color-text);
   font-weight: 500;
+
+  &--link {
+    color: var(--color-text);
+    text-decoration: none;
+
+    &:hover {
+      color: var(--color-primary);
+      text-decoration: underline;
+    }
+  }
+}
+
+.cell-coaching {
+  white-space: nowrap;
+}
+
+.coaching-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 500;
+  padding: 2px 8px;
+  border-radius: 99px;
+  border: 1px solid var(--color-border);
+  color: var(--color-text-muted);
+  white-space: nowrap;
+
+  &--analyzing {
+    color: var(--color-primary);
+    border-color: var(--color-primary);
+  }
+
+  &--done {
+    color: var(--color-success);
+    border-color: var(--color-success);
+  }
+
+  &--failed {
+    color: var(--color-danger);
+    border-color: var(--color-danger);
+  }
 }
 
 .cell-meta {
