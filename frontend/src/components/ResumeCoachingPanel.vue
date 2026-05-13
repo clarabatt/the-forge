@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { ref } from "vue";
 import type { CoachingAnalysis } from "@/stores/resumes";
+import IssueList from "@/components/ui/IssueList.vue";
+import QuestionsList from "@/components/ui/QuestionsList.vue";
 
 defineProps<{ analysis: CoachingAnalysis }>();
 
@@ -26,11 +28,7 @@ const frameworkOpen = ref(false);
     <!-- Global issues -->
     <div v-if="analysis.global_issues?.length" class="section">
       <h3 class="section-title section-title--global">Global issues</h3>
-      <ul class="issue-list">
-        <li v-for="(issue, i) in analysis.global_issues" :key="i" class="issue-list__item">
-          {{ issue }}
-        </li>
-      </ul>
+      <IssueList :items="analysis.global_issues" />
     </div>
 
     <!-- STAR / XYZ explainer -->
@@ -84,27 +82,15 @@ const frameworkOpen = ref(false);
         Looks good!
       </div>
       <template v-else>
-        <ul v-if="analysis.summary_feedback?.issues?.length" class="issue-list">
-          <li
-            v-for="(issue, i) in analysis.summary_feedback.issues"
-            :key="i"
-            class="issue-list__item"
-          >
-            {{ issue }}
-          </li>
-        </ul>
-        <div v-if="analysis.summary_feedback?.coaching_questions?.length" class="questions">
-          <p class="questions-label">To guide your rewrite:</p>
-          <ul class="questions-list">
-            <li
-              v-for="(q, i) in analysis.summary_feedback.coaching_questions"
-              :key="i"
-              class="questions-list__item"
-            >
-              {{ q }}
-            </li>
-          </ul>
-        </div>
+        <IssueList
+          v-if="analysis.summary_feedback?.issues?.length"
+          :items="analysis.summary_feedback.issues"
+        />
+        <QuestionsList
+          v-if="analysis.summary_feedback?.coaching_questions?.length"
+          :items="analysis.summary_feedback.coaching_questions"
+          label="To guide your rewrite:"
+        />
       </template>
     </div>
 
@@ -114,23 +100,15 @@ const frameworkOpen = ref(false);
       class="section"
     >
       <h3 class="section-title">Skills</h3>
-      <ul v-if="analysis.skills_feedback.issues?.length" class="issue-list">
-        <li v-for="(issue, i) in analysis.skills_feedback.issues" :key="i" class="issue-list__item">
-          {{ issue }}
-        </li>
-      </ul>
-      <div v-if="analysis.skills_feedback.coaching_questions?.length" class="questions">
-        <p class="questions-label">To guide your update:</p>
-        <ul class="questions-list">
-          <li
-            v-for="(q, i) in analysis.skills_feedback.coaching_questions"
-            :key="i"
-            class="questions-list__item"
-          >
-            {{ q }}
-          </li>
-        </ul>
-      </div>
+      <IssueList
+        v-if="analysis.skills_feedback.issues?.length"
+        :items="analysis.skills_feedback.issues"
+      />
+      <QuestionsList
+        v-if="analysis.skills_feedback.coaching_questions?.length"
+        :items="analysis.skills_feedback.coaching_questions"
+        label="To guide your update:"
+      />
     </div>
 
     <!-- Experience blocks -->
@@ -158,17 +136,11 @@ const frameworkOpen = ref(false);
             {{ issue }}
           </span>
         </div>
-        <div v-if="bullet.coaching_questions?.length" class="questions questions--tight">
-          <ul class="questions-list">
-            <li
-              v-for="(q, qi) in bullet.coaching_questions"
-              :key="qi"
-              class="questions-list__item"
-            >
-              {{ q }}
-            </li>
-          </ul>
-        </div>
+        <QuestionsList
+          v-if="bullet.coaching_questions?.length"
+          :items="bullet.coaching_questions"
+          class="questions--tight"
+        />
         <div v-if="bullet.framework_score === 'strong' && !bullet.issues?.length" class="looks-good looks-good--inline">
           Looks good!
         </div>
@@ -252,67 +224,6 @@ const frameworkOpen = ref(false);
   padding: 8px 10px;
   line-height: 1.5;
   font-style: italic;
-}
-
-.issue-list {
-  list-style: none;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-
-  &__item {
-    color: var(--color-text);
-    padding-left: 14px;
-    position: relative;
-    line-height: 1.45;
-
-    &::before {
-      content: "•";
-      position: absolute;
-      left: 0;
-      color: var(--color-warning);
-    }
-  }
-}
-
-.questions {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-
-  &--tight {
-    margin-top: 4px;
-  }
-}
-
-.questions-label {
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--color-text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-.questions-list {
-  list-style: none;
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-
-  &__item {
-    color: var(--color-primary);
-    padding-left: 16px;
-    position: relative;
-    line-height: 1.45;
-
-    &::before {
-      content: "→";
-      position: absolute;
-      left: 0;
-      color: var(--color-primary);
-      font-size: 11px;
-    }
-  }
 }
 
 .looks-good {
@@ -476,5 +387,9 @@ const frameworkOpen = ref(false);
     content: " ·";
     margin-left: 2px;
   }
+}
+
+.questions--tight {
+  margin-top: 4px;
 }
 </style>

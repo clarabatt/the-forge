@@ -3,7 +3,7 @@ import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useResumesStore, type Resume } from "@/stores/resumes";
 import ResumeCoachingPanel from "@/components/ResumeCoachingPanel.vue";
-import Spinner from "@/components/ui/Spinner.vue";
+import CoachingStatusChip from "@/components/ui/CoachingStatusChip.vue";
 
 const route = useRoute();
 const router = useRouter();
@@ -81,18 +81,7 @@ onUnmounted(stopPolling);
           </nav>
         </div>
         <div class="header-right">
-          <span class="coaching-chip" :class="`coaching-chip--${resume.coaching_status}`">
-            <Spinner v-if="resume.coaching_status === 'analyzing'" :size="11" />
-            {{
-              resume.coaching_status === "analyzing"
-                ? "Analyzing…"
-                : resume.coaching_status === "done"
-                  ? "Coaching ready"
-                  : resume.coaching_status === "failed"
-                    ? "Analysis failed"
-                    : "Pending"
-            }}
-          </span>
+          <CoachingStatusChip :status="resume.coaching_status" />
         </div>
       </header>
 
@@ -210,34 +199,6 @@ onUnmounted(stopPolling);
   gap: 8px;
   flex-shrink: 0;
   margin-top: 3px;
-}
-
-.coaching-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 11px;
-  font-weight: 500;
-  padding: 3px 10px;
-  border-radius: 99px;
-  border: 1px solid var(--color-border);
-  color: var(--color-text-muted);
-  white-space: nowrap;
-
-  &--analyzing {
-    color: var(--color-primary);
-    border-color: var(--color-primary);
-  }
-
-  &--done {
-    color: var(--color-success);
-    border-color: var(--color-success);
-  }
-
-  &--failed {
-    color: var(--color-danger);
-    border-color: var(--color-danger);
-  }
 }
 
 .analyzing-banner {

@@ -1,9 +1,17 @@
 <script setup lang="ts">
-import { computed, ref, useTemplateRef, watch } from "vue";
+import { computed, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
+import {
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuPortal,
+  DropdownMenuRoot,
+  DropdownMenuTrigger,
+} from "radix-vue";
 import { PipelineStatus, useApplicationsStore } from "@/stores/applications";
 import { useResumesStore } from "@/stores/resumes";
 import { useAuthStore } from "@/stores/auth";
+import { useFileUpload } from "@/composables/useFileUpload";
 import { getAppTitle } from "@/utils/application";
 import AppSelect from "@/components/ui/AppSelect.vue";
 import BaseButton from "@/components/ui/BaseButton.vue";
@@ -19,12 +27,6 @@ const emit = defineEmits<{ "new-application": []; close: [] }>();
 
 const route = useRoute();
 const router = useRouter();
-
-async function logout() {
-  menuOpen.value = false;
-  await authStore.logout();
-  router.push({ name: "login" });
-}
 const appsStore = useApplicationsStore();
 const resumesStore = useResumesStore();
 const authStore = useAuthStore();
@@ -32,14 +34,11 @@ const authStore = useAuthStore();
 const collapsed = ref(false);
 
 const activeId = computed(() => route.params.id as string | undefined);
-
 const hasNoBaseResumes = computed(() => !resumesStore.baseResumes?.length);
 
 const selectedResumeId = computed({
   get: () => resumesStore.selectedResumeId ?? "",
-  set: (v: string) => {
-    resumesStore.selectedResumeId = v || null;
-  },
+  set: (v: string) => { resumesStore.selectedResumeId = v || null; },
 });
 
 const costDisplay = computed(() => {
@@ -57,67 +56,14 @@ function selectApp(id: string) {
   emit("close");
 }
 
-const menuOpen = ref(false);
-const menuRef = useTemplateRef<HTMLDivElement>("menuRef");
-
-function toggleMenu() {
-  menuOpen.value = !menuOpen.value;
+async function logout() {
+  await authStore.logout();
+  router.push({ name: "login" });
 }
 
-function onClickOutside(e: MouseEvent) {
-  if (menuRef.value && !menuRef.value.contains(e.target as Node)) {
-    menuOpen.value = false;
-  }
-}
-
-watch(menuOpen, (open) => {
-  if (open) document.addEventListener("mousedown", onClickOutside);
-  else document.removeEventListener("mousedown", onClickOutside);
-});
-
-const fileInput = useTemplateRef<HTMLInputElement>("fileInput");
-const isUploading = ref(false);
-const uploadError = ref<string | null>(null);
-
-function triggerUpload() {
-  uploadError.value = null;
-  fileInput.value?.click();
-}
-
-async function onFileSelected(event: Event) {
-  const file = (event.target as HTMLInputElement).files?.[0];
-  if (!file) return;
-
-  isUploading.value = true;
-  uploadError.value = null;
-
-  const form = new FormData();
-  form.append("file", file);
-
-  try {
-    const res = await fetch("/api/resumes/", {
-      method: "POST",
-      credentials: "include",
-      body: form,
-    });
-
-    const body = await res.json().catch(() => ({}));
-
-    if (!res.ok) {
-      uploadError.value = body.detail ?? "Upload failed";
-      return;
-    }
-
-    await resumesStore.fetchAll();
-    if (body?.id) resumesStore.selectedResumeId = body.id;
-  } catch {
-    uploadError.value = "Network error — try again";
-  } finally {
-    isUploading.value = false;
-    // reset so the same file can be re-selected if needed
-    if (fileInput.value) fileInput.value.value = "";
-  }
-}
+const { fileInput, isUploading, uploadError, triggerUpload, onFileSelected } = useFileUpload(
+  (body) => { if (body?.id) resumesStore.selectedResumeId = body.id; },
+);
 
 const statusColor: Record<PipelineStatus, string> = {
   [PipelineStatus.READY]: "var(--color-success)",
@@ -171,7 +117,7 @@ const statusColor: Record<PipelineStatus, string> = {
           />
 
           <input
-            ref="fileInput"
+            :ref="(el) => (fileInput = el as HTMLInputElement | null)"
             type="file"
             accept=".docx"
             class="file-input-hidden"
@@ -265,17 +211,19 @@ const statusColor: Record<PipelineStatus, string> = {
         <ProgressBar :pct="costDisplay.pct" color="primary" :height="3" />
       </div>
 
-      <div ref="menuRef" class="footer-menu">
-        <button class="menu-trigger" title="More options" @click="toggleMenu">
+      <DropdownMenuRoot>
+        <DropdownMenuTrigger class="menu-trigger" title="More options">
           <IconDotsVertical />
-        </button>
-        <div v-if="menuOpen" class="menu-dropdown">
-          <button class="menu-item menu-item--danger" @click="logout">
-            <IconLogout />
-            Log out
-          </button>
-        </div>
-      </div>
+        </DropdownMenuTrigger>
+        <DropdownMenuPortal>
+          <DropdownMenuContent class="menu-content" side="top" :side-offset="6" align="end">
+            <DropdownMenuItem class="sidebar-menu-item sidebar-menu-item--danger" @select="logout">
+              <IconLogout />
+              Log out
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenuPortal>
+      </DropdownMenuRoot>
     </div>
   </aside>
 </template>
@@ -554,11 +502,6 @@ const statusColor: Record<PipelineStatus, string> = {
   }
 }
 
-.footer-menu {
-  position: relative;
-  flex-shrink: 0;
-}
-
 .menu-trigger {
   background: none;
   border: none;
@@ -569,50 +512,12 @@ const statusColor: Record<PipelineStatus, string> = {
   padding: 4px 6px;
   border-radius: var(--radius);
   color: var(--color-text-muted);
+  flex-shrink: 0;
 
-  &:hover {
+  &:hover,
+  &[data-state="open"] {
     background: var(--color-border);
     color: var(--color-text);
-  }
-}
-
-.menu-dropdown {
-  position: absolute;
-  bottom: calc(100% + 6px);
-  right: 0;
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
-  padding: 4px;
-  min-width: 140px;
-  z-index: 100;
-}
-
-.menu-item {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 7px 10px;
-  background: none;
-  border: none;
-  border-radius: var(--radius);
-  font-size: 13px;
-  cursor: pointer;
-  color: var(--color-text);
-  text-align: left;
-
-  &:hover {
-    background: var(--color-bg-subtle);
-  }
-
-  &--danger {
-    color: var(--color-danger);
-
-    &:hover {
-      background: color-mix(in srgb, var(--color-danger) 10%, transparent);
-    }
   }
 }
 
@@ -636,5 +541,33 @@ const statusColor: Record<PipelineStatus, string> = {
   font-size: 12px;
   font-weight: 500;
   color: var(--color-text);
+}
+</style>
+
+<style lang="scss">
+/* Sidebar logout dropdown — teleported outside component DOM via DropdownMenuPortal */
+.sidebar-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px;
+  font-size: 13px;
+  border-radius: var(--radius);
+  cursor: pointer;
+  outline: none;
+  color: var(--color-text);
+  user-select: none;
+
+  &[data-highlighted] {
+    background: var(--color-bg-subtle);
+  }
+
+  &--danger {
+    color: var(--color-danger);
+
+    &[data-highlighted] {
+      background: color-mix(in srgb, var(--color-danger) 10%, transparent);
+    }
+  }
 }
 </style>
