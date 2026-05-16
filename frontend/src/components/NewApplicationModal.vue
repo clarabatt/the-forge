@@ -1,40 +1,41 @@
 <script setup lang="ts">
-import { ref } from 'vue'
-import { useRouter } from 'vue-router'
-import { useApplicationsStore } from '@/stores/applications'
-import { useResumesStore } from '@/stores/resumes'
-import BaseDialog from '@/components/ui/BaseDialog.vue'
+import { computed, ref } from "vue";
+import { useRouter } from "vue-router";
+import { useApplicationsStore } from "@/stores/applications";
+import { useResumesStore } from "@/stores/resumes";
+import BaseDialog from "@/components/ui/BaseDialog.vue";
+import AppSelect from "@/components/ui/AppSelect.vue";
 
-const emit = defineEmits<{ close: [] }>()
+const emit = defineEmits<{ close: [] }>();
 
-const router = useRouter()
-const appsStore = useApplicationsStore()
-const resumesStore = useResumesStore()
+const router = useRouter();
+const appsStore = useApplicationsStore();
+const resumesStore = useResumesStore();
 
-const jobDescription = ref('')
-const isSubmitting = ref(false)
-const error = ref<string | null>(null)
+const selectedResumeId = ref<string | null>(resumesStore.selectedResumeId);
+const jobDescription = ref("");
+const isSubmitting = ref(false);
+const error = ref<string | null>(null);
+
+const resumeOptions = computed(() =>
+  resumesStore.baseResumes.map((r) => ({ value: r.id, label: r.file_name })),
+);
 
 async function submit() {
-  if (!jobDescription.value.trim()) return
+  if (!jobDescription.value.trim() || !selectedResumeId.value) return;
 
-  const resumeId = resumesStore.selectedResumeId
-  if (!resumeId) {
-    error.value = 'Select a base resume in the sidebar first.'
-    return
-  }
-
-  isSubmitting.value = true
-  error.value = null
+  isSubmitting.value = true;
+  error.value = null;
+  resumesStore.selectedResumeId = selectedResumeId.value;
 
   try {
-    const app = await appsStore.create(jobDescription.value.trim(), resumeId)
-    emit('close')
-    router.push({ name: 'application', params: { id: app.id } })
+    const app = await appsStore.create(jobDescription.value.trim(), selectedResumeId.value);
+    emit("close");
+    router.push({ name: "application", params: { id: app.id } });
   } catch (e) {
-    error.value = e instanceof Error ? e.message : 'Something went wrong'
+    error.value = e instanceof Error ? e.message : "Something went wrong";
   } finally {
-    isSubmitting.value = false
+    isSubmitting.value = false;
   }
 }
 </script>
@@ -49,40 +50,53 @@ async function submit() {
     close-label="Cancel"
     :close-disabled="isSubmitting"
     :action-label="isSubmitting ? 'Creating…' : 'Analyze & Create'"
-    :action-disabled="isSubmitting || !jobDescription.trim()"
+    :action-disabled="isSubmitting || !jobDescription.trim() || !selectedResumeId"
     @update:open="(v) => !v && emit('close')"
     @action="submit"
   >
-    <p class="modal-description">
-      Paste the job description from LinkedIn or any job board. The AI will extract
-      the company, role, and required skills automatically.
-    </p>
+    <div class="modal-field">
+      <label class="modal-label" for="resume-select">Base Resume</label>
+      <AppSelect
+        id="resume-select"
+        v-model="selectedResumeId"
+        :options="resumeOptions"
+        placeholder="Select a resume…"
+      />
+    </div>
 
-    <textarea
-      v-model="jobDescription"
-      class="jd-textarea"
-      placeholder="Paste the full job description here…"
-      rows="12"
-      :disabled="isSubmitting"
-      autofocus
-    />
+    <div class="modal-field">
+      <label class="modal-label" for="job-description">Job Description</label>
+      <p class="label-description">
+        Paste the job description from LinkedIn or any job board. The AI will extract the company,
+        role, and required skills automatically.
+      </p>
+      <textarea
+        v-model="jobDescription"
+        class="jd-textarea"
+        placeholder="Paste the full job description here…"
+        rows="12"
+        :disabled="isSubmitting"
+        autofocus
+      />
+    </div>
 
     <p v-if="error" class="modal-error">{{ error }}</p>
   </BaseDialog>
 </template>
 
 <style lang="scss" scoped>
-
 .modal-title {
   font-size: 17px;
   font-weight: 600;
   color: var(--color-text);
 }
 
-.modal-description {
-  font-size: 13px;
+.label-description {
+  font-size: 12px;
   color: var(--color-text-muted);
   line-height: 1.5;
+  margin: 0rem 0 0.3rem;
+  font-style: italic;
 }
 
 .jd-textarea {
@@ -109,11 +123,22 @@ async function submit() {
   }
 }
 
+.modal-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.modal-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
 .modal-error {
   font-size: 12px;
   color: var(--color-danger);
 }
-
-
-
 </style>
