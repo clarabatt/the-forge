@@ -1,17 +1,20 @@
 <script setup lang="ts">
-defineOptions({ inheritAttrs: false })
+defineOptions({ inheritAttrs: false });
 defineProps<{
-  variant?: 'primary' | 'secondary' | 'danger'
-  size?: 'sm'
-  block?: boolean
-}>()
+  variant?: "primary" | "secondary" | "danger";
+  size?: "sm";
+  block?: boolean;
+}>();
 </script>
 
 <template>
   <button
     v-bind="$attrs"
     class="base-btn"
-    :class="[`base-btn--${variant ?? 'primary'}`, { 'base-btn--block': block, 'base-btn--sm': size === 'sm' }]"
+    :class="[
+      `base-btn--${variant ?? 'primary'}`,
+      { 'base-btn--block': block, 'base-btn--sm': size === 'sm' },
+    ]"
   >
     <slot />
   </button>
@@ -23,7 +26,7 @@ defineProps<{
   align-items: center;
   justify-content: center;
   gap: 6px;
-  padding: 7px 14px;
+  padding: 0.4rem 0.5rem;
   font-size: 13px;
   font-weight: 500;
   border-radius: var(--radius);

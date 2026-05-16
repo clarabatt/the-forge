@@ -38,7 +38,9 @@ const hasNoBaseResumes = computed(() => !resumesStore.baseResumes?.length);
 
 const selectedResumeId = computed({
   get: () => resumesStore.selectedResumeId ?? "",
-  set: (v: string) => { resumesStore.selectedResumeId = v || null; },
+  set: (v: string) => {
+    resumesStore.selectedResumeId = v || null;
+  },
 });
 
 const costDisplay = computed(() => {
@@ -62,7 +64,9 @@ async function logout() {
 }
 
 const { fileInput, isUploading, uploadError, triggerUpload, onFileSelected } = useFileUpload(
-  (body) => { if (body?.id) resumesStore.selectedResumeId = body.id; },
+  (body) => {
+    if (body?.id) resumesStore.selectedResumeId = body.id;
+  },
 );
 
 const statusColor: Record<PipelineStatus, string> = {
@@ -81,7 +85,7 @@ const statusColor: Record<PipelineStatus, string> = {
   >
     <!-- Header -->
     <div class="sidebar-header">
-      <span v-if="!collapsed" class="sidebar-title">The Forge</span>
+      <h1 v-if="!collapsed" class="sidebar-title">The Forge</h1>
       <button
         class="sidebar-toggle"
         :aria-label="collapsed ? 'Expand sidebar' : 'Collapse sidebar'"
@@ -278,7 +282,7 @@ const statusColor: Record<PipelineStatus, string> = {
   align-items: center;
   justify-content: space-between;
   padding: 0 12px;
-  min-height: 70px;
+  min-height: 3rem;
   border-bottom: 1px solid var(--color-border);
   flex-shrink: 0;
 }
@@ -287,7 +291,6 @@ const statusColor: Record<PipelineStatus, string> = {
   font-size: 16px;
   font-weight: 700;
   color: var(--color-text);
-  letter-spacing: -0.01em;
 }
 
 .sidebar-toggle {
