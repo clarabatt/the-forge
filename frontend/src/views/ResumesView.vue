@@ -4,9 +4,9 @@ import { useRouter } from "vue-router";
 import { useResumesStore, type Resume } from "@/stores/resumes";
 import { useFileUpload } from "@/composables/useFileUpload";
 import BaseDialog from "@/components/ui/BaseDialog.vue";
-import BaseButton from "@/components/ui/BaseButton.vue";
 import CoachingStatusChip from "@/components/ui/CoachingStatusChip.vue";
 import InlineEditForm from "@/components/ui/InlineEditForm.vue";
+import TitleBar from "@/components/ui/TitleBar.vue";
 import ResumeActionsMenu from "@/components/ResumeActionsMenu.vue";
 
 const router = useRouter();
@@ -89,14 +89,14 @@ async function submitRename(id: string) {
 
 <template>
   <div class="resumes-page">
-    <header class="detail-header">
-      <div class="detail-title">
-        <h1>Manage Resumes</h1>
-      </div>
-      <BaseButton variant="primary" :disabled="isUploading" @click="triggerUpload">
-        {{ isUploading ? "Uploading…" : "+ Upload resume" }}
-      </BaseButton>
-    </header>
+    <TitleBar
+      title="Resumes"
+      :action-label="isUploading ? 'Uploading…' : 'Upload resume'"
+      :action-disabled="isUploading"
+      @action="triggerUpload"
+    />
+
+    <div class="resumes-content">
     <input
       :ref="(el) => (fileInput = el as HTMLInputElement | null)"
       type="file"
@@ -157,6 +157,7 @@ async function submitRename(id: string) {
         </tr>
       </tbody>
     </table>
+    </div>
   </div>
 
   <BaseDialog
@@ -178,26 +179,16 @@ async function submitRename(id: string) {
 
 <style lang="scss" scoped>
 .resumes-page {
+  display: flex;
+  flex-direction: column;
+}
+
+.resumes-content {
   padding: 32px 40px;
 
   @media (max-width: 640px) {
     padding: 20px 16px;
   }
-}
-
-.detail-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  margin-bottom: 20px;
-  gap: 16px;
-}
-
-.detail-title h1 {
-  font-size: 20px;
-  font-weight: 600;
-  color: var(--color-text);
-  line-height: 1.2;
 }
 
 .file-input-hidden {
