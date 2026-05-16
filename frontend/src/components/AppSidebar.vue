@@ -13,12 +13,12 @@ import { useResumesStore } from "@/stores/resumes";
 import { useAuthStore } from "@/stores/auth";
 import { useFileUpload } from "@/composables/useFileUpload";
 import { getAppTitle } from "@/utils/application";
-import AppSelect from "@/components/ui/AppSelect.vue";
-import BaseButton from "@/components/ui/BaseButton.vue";
 import ProgressBar from "@/components/ui/ProgressBar.vue";
 import Avatar from "@/components/ui/Avatar.vue";
 import IconHamburger from "@/components/icons/IconHamburger.vue";
-import IconSettings from "@/components/icons/IconSettings.vue";
+import IconFolder from "@/components/icons/IconFolder.vue";
+import IconUpload from "@/components/icons/IconUpload.vue";
+import IconPlus from "@/components/icons/IconPlus.vue";
 import IconDotsVertical from "@/components/icons/IconDotsVertical.vue";
 import IconLogout from "@/components/icons/IconLogout.vue";
 
@@ -35,13 +35,6 @@ const collapsed = ref(false);
 
 const activeId = computed(() => route.params.id as string | undefined);
 const hasNoBaseResumes = computed(() => !resumesStore.baseResumes?.length);
-
-const selectedResumeId = computed({
-  get: () => resumesStore.selectedResumeId ?? "",
-  set: (v: string) => {
-    resumesStore.selectedResumeId = v || null;
-  },
-});
 
 const costDisplay = computed(() => {
   const u = authStore.usage;
@@ -85,7 +78,7 @@ const statusColor: Record<PipelineStatus, string> = {
   >
     <!-- Header -->
     <div class="sidebar-header">
-      <h1 v-if="!collapsed" class="sidebar-title">The Forge</h1>
+      <RouterLink v-if="!collapsed" to="/" class="sidebar-title">The Forge</RouterLink>
       <button
         class="sidebar-toggle"
         :aria-label="collapsed ? 'Expand sidebar' : 'Collapse sidebar'"
@@ -100,25 +93,15 @@ const statusColor: Record<PipelineStatus, string> = {
     <div class="sidebar-body">
       <template v-if="!collapsed">
         <div class="sidebar-section">
-          <div class="sidebar-label-row">
-            <p class="sidebar-label">Base Resume</p>
-            <button
-              class="sidebar-label-action"
-              aria-label="Manage resumes"
-              data-tooltip="Manage resumes"
-              @click="
-                router.push({ name: 'resumes' });
-                emit('close');
-              "
-            >
-              <IconSettings />
-            </button>
-          </div>
-          <AppSelect
-            v-model="selectedResumeId"
-            :options="resumesStore.baseResumes.map((r) => ({ value: r.id, label: r.file_name }))"
-            placeholder="No resume"
-          />
+          <p class="sidebar-section-title">Pages</p>
+          <RouterLink :to="{ name: 'resumes' }" class="sidebar-nav-item" @click="emit('close')">
+            <IconFolder />
+            Resumes
+          </RouterLink>
+        </div>
+
+        <div class="sidebar-section">
+          <p class="sidebar-section-title">Actions</p>
 
           <input
             :ref="(el) => (fileInput = el as HTMLInputElement | null)"
@@ -128,35 +111,31 @@ const statusColor: Record<PipelineStatus, string> = {
             @change="onFileSelected"
           />
           <button
-            class="upload-link"
+            class="sidebar-nav-item"
             :disabled="isUploading"
             :title="isUploading ? 'Uploading resume...' : 'Upload new resume'"
             @click="triggerUpload"
           >
-            {{ isUploading ? "Uploading…" : "+ Upload new resume" }}
+            <IconUpload />
+            {{ isUploading ? "Uploading…" : "Upload resume" }}
           </button>
           <p v-if="uploadError" class="upload-error">{{ uploadError }}</p>
-        </div>
 
-        <div class="sidebar-section">
-          <BaseButton
-            variant="primary"
-            block
+          <button
+            class="sidebar-nav-item"
             :disabled="hasNoBaseResumes"
-            :aria-label="
-              hasNoBaseResumes ? 'Upload a resume to create an application' : 'New application'
-            "
             :title="
               hasNoBaseResumes ? 'Upload a resume to create an application' : 'New application'
             "
             @click="emit('new-application')"
           >
-            New Application
-          </BaseButton>
+            <IconPlus />
+            New application
+          </button>
         </div>
 
-        <div class="sidebar-section sidebar-section--apps">
-          <p class="sidebar-label">Applications</p>
+        <div class="sidebar-section">
+          <p class="sidebar-section-title">Applications</p>
           <div v-if="appsStore.isLoading" class="sidebar-empty">Loading…</div>
           <div v-else-if="appsStore.applications.length === 0" class="sidebar-empty">
             No applications yet.
@@ -291,6 +270,7 @@ const statusColor: Record<PipelineStatus, string> = {
   font-size: 16px;
   font-weight: 700;
   color: var(--color-text);
+  text-decoration: none;
 }
 
 .sidebar-toggle {
@@ -318,66 +298,46 @@ const statusColor: Record<PipelineStatus, string> = {
 }
 
 .sidebar-section {
-  padding: 16px;
-  border-bottom: 1px solid var(--color-border);
+  padding: 6px 16px;
 
-  &--apps {
-    border-bottom: none;
+  &:first-child {
+    padding-top: 18px;
   }
 }
 
-.sidebar-label-row {
+.sidebar-section-title {
+  font-size: 11px;
+  font-weight: 400;
+  letter-spacing: 0.06em;
+  color: var(--color-primary-hover);
+  margin-bottom: 0.3rem;
+}
+
+.sidebar-nav-item {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  margin-bottom: 8px;
-}
-
-.sidebar-label {
-  font-size: 11px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--color-text-muted);
-  margin-bottom: 0;
-}
-
-.sidebar-label-action {
-  position: relative;
+  gap: 8px;
+  width: 100%;
+  padding: 6px 8px;
+  margin: 8px 0;
+  font-size: 13px;
+  color: var(--color-text);
+  line-height: 0;
   background: none;
   border: none;
-  padding: 2px;
   cursor: pointer;
-  color: var(--color-text-muted);
-  display: flex;
-  align-items: center;
-  border-radius: var(--radius);
 
-  &:hover {
-    color: var(--color-text);
+  &:hover:not(:disabled) {
+    text-decoration: underline;
+  }
+
+  &.router-link-active {
     background: var(--color-border);
   }
 
-  &::after {
-    content: attr(data-tooltip);
-    position: absolute;
-    top: calc(100% + 6px);
-    right: 0;
-    background: var(--color-surface);
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius);
-    padding: 4px 8px;
-    font-size: 11px;
-    white-space: nowrap;
-    color: var(--color-text);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    pointer-events: none;
-    opacity: 0;
-    transition: opacity 0.15s ease;
-  }
-
-  &:hover::after {
-    opacity: 1;
+  &:disabled {
+    color: var(--color-text-muted);
+    cursor: default;
   }
 }
 
@@ -389,26 +349,6 @@ const statusColor: Record<PipelineStatus, string> = {
 // Upload
 .file-input-hidden {
   display: none;
-}
-
-.upload-link {
-  margin-top: 6px;
-  background: none;
-  border: none;
-  padding: 0;
-  font-size: 12px;
-  color: var(--color-primary);
-  cursor: pointer;
-  text-align: left;
-
-  &:hover:not(:disabled) {
-    text-decoration: underline;
-  }
-
-  &:disabled {
-    color: var(--color-text-muted);
-    cursor: default;
-  }
 }
 
 .upload-error {
@@ -495,7 +435,6 @@ const statusColor: Record<PipelineStatus, string> = {
   align-items: center;
   gap: 10px;
   padding: 12px 16px;
-  border-top: 1px solid var(--color-border);
   flex-shrink: 0;
   background: var(--color-bg-subtle);
 
