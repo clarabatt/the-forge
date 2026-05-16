@@ -1,28 +1,27 @@
 <script setup lang="ts">
 import { ref } from "vue";
-import type { CoachingAnalysis } from "@/stores/resumes";
+import type { InsightsAnalysis } from "@/stores/resumes";
 import IssueList from "@/components/ui/IssueList.vue";
 import QuestionsList from "@/components/ui/QuestionsList.vue";
+import StatusChip, { type StatusChipVariant } from "@/components/ui/StatusChip.vue";
 
-defineProps<{ analysis: CoachingAnalysis }>();
+const scoreConfig: Record<InsightsAnalysis["overall_score"], { text: string; variant: StatusChipVariant }> = {
+  needs_work: { text: "Needs work", variant: "error" },
+  decent:     { text: "Decent",     variant: "warning" },
+  strong:     { text: "Strong",     variant: "success" },
+};
+
+defineProps<{ analysis: InsightsAnalysis }>();
 
 const frameworkOpen = ref(false);
 </script>
 
 <template>
-  <div class="coaching-panel">
+  <div class="insights-panel">
     <!-- Overall score -->
     <div class="panel-header">
-      <span class="score-badge" :class="`score-badge--${analysis.overall_score}`">
-        {{
-          analysis.overall_score === "needs_work"
-            ? "Needs work"
-            : analysis.overall_score === "decent"
-              ? "Decent"
-              : "Strong"
-        }}
-      </span>
-      <span class="panel-header-label">Overall coaching score</span>
+      <StatusChip v-bind="scoreConfig[analysis.overall_score]" />
+      <span class="panel-header-label">Overall insights score</span>
     </div>
 
     <!-- Global issues -->
@@ -150,7 +149,7 @@ const frameworkOpen = ref(false);
 </template>
 
 <style lang="scss" scoped>
-.coaching-panel {
+.insights-panel {
   display: flex;
   flex-direction: column;
   gap: 20px;
@@ -168,23 +167,6 @@ const frameworkOpen = ref(false);
   color: var(--color-text-muted);
 }
 
-.score-badge {
-  font-size: 12px;
-  font-weight: 600;
-  padding: 4px 12px;
-  border-radius: 99px;
-  border: 1px solid currentColor;
-
-  &--needs_work {
-    color: var(--color-danger);
-  }
-  &--decent {
-    color: var(--color-warning);
-  }
-  &--strong {
-    color: var(--color-success);
-  }
-}
 
 .section {
   display: flex;

@@ -1,20 +1,20 @@
 import { defineStore } from "pinia";
 import { computed, ref } from "vue";
 
-export interface CoachingBullet {
+export interface InsightsBullet {
   text: string;
   framework_score: "weak" | "partial" | "strong";
   issues: string[];
   coaching_questions: string[];
 }
 
-export interface CoachingExperienceBlock {
+export interface InsightsExperienceBlock {
   employer: string;
   date_range: string | null;
-  bullets: CoachingBullet[];
+  bullets: InsightsBullet[];
 }
 
-export interface CoachingAnalysis {
+export interface InsightsAnalysis {
   overall_score: "needs_work" | "decent" | "strong";
   global_issues: string[];
   summary_feedback: {
@@ -27,7 +27,7 @@ export interface CoachingAnalysis {
     issues: string[];
     coaching_questions: string[];
   };
-  experience_blocks: CoachingExperienceBlock[];
+  experience_blocks: InsightsExperienceBlock[];
 }
 
 export interface Resume {
@@ -113,10 +113,10 @@ export const useResumesStore = defineStore("resumes", () => {
     if (idx !== -1) resumes.value[idx] = updated;
   }
 
-  function getCoachingAnalysis(resume: Resume): CoachingAnalysis | null {
+  function getInsightsAnalysis(resume: Resume): InsightsAnalysis | null {
     if (!resume.coaching_analysis) return null;
     try {
-      return JSON.parse(resume.coaching_analysis) as CoachingAnalysis;
+      return JSON.parse(resume.coaching_analysis) as InsightsAnalysis;
     } catch {
       return null;
     }
@@ -132,6 +132,6 @@ export const useResumesStore = defineStore("resumes", () => {
     deleteResume,
     renameResume,
     downloadResume,
-    getCoachingAnalysis,
+    getInsightsAnalysis,
   };
 });

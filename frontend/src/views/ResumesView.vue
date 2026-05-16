@@ -2,11 +2,13 @@
 import { ref } from "vue";
 import { useRouter } from "vue-router";
 import { useResumesStore, type Resume } from "@/stores/resumes";
+import { type StatusChipVariant } from "@/components/ui/StatusChip.vue";
 import { useFileUpload } from "@/composables/useFileUpload";
 import BaseDialog from "@/components/ui/BaseDialog.vue";
-import BaseButton from "@/components/ui/BaseButton.vue";
-import CoachingStatusChip from "@/components/ui/CoachingStatusChip.vue";
+import BaseTable from "@/components/ui/BaseTable.vue";
+import StatusChip from "@/components/ui/StatusChip.vue";
 import InlineEditForm from "@/components/ui/InlineEditForm.vue";
+import TitleBar from "@/components/ui/TitleBar.vue";
 import ResumeActionsMenu from "@/components/ResumeActionsMenu.vue";
 
 const router = useRouter();
@@ -74,6 +76,25 @@ function cancelRename() {
   renameError.value = null;
 }
 
+function insightsChipProps(status: string): { text: string; variant: StatusChipVariant; loading?: boolean } {
+  const map: Record<string, { text: string; variant: StatusChipVariant; loading?: boolean }> = {
+    pending:   { text: "Pending",    variant: "default" },
+    analyzing: { text: "Analyzing…", variant: "info", loading: true },
+    done:      { text: "Ready",      variant: "success" },
+    failed:    { text: "Failed",     variant: "error" },
+  };
+  return map[status] ?? { text: status, variant: "default" };
+}
+
+function scoreChipProps(score: string): { text: string; variant: StatusChipVariant } {
+  const map: Record<string, { text: string; variant: StatusChipVariant }> = {
+    needs_work: { text: "Needs work", variant: "error" },
+    decent:     { text: "Decent",     variant: "warning" },
+    strong:     { text: "Strong",     variant: "success" },
+  };
+  return map[score] ?? { text: score, variant: "default" };
+}
+
 async function submitRename(id: string) {
   const name = renameValue.value.trim();
   if (!name) return;
@@ -89,14 +110,14 @@ async function submitRename(id: string) {
 
 <template>
   <div class="resumes-page">
-    <header class="detail-header">
-      <div class="detail-title">
-        <h1>Manage Resumes</h1>
-      </div>
-      <BaseButton variant="primary" :disabled="isUploading" @click="triggerUpload">
-        {{ isUploading ? "Uploading…" : "+ Upload resume" }}
-      </BaseButton>
-    </header>
+    <TitleBar
+      title="Resumes"
+      :action-label="isUploading ? 'Uploading…' : 'Upload resume'"
+      :action-disabled="isUploading"
+      @action="triggerUpload"
+    />
+
+    <div class="resumes-content">
     <input
       :ref="(el) => (fileInput = el as HTMLInputElement | null)"
       type="file"
@@ -109,13 +130,14 @@ async function submitRename(id: string) {
 
     <div v-if="!resumesStore.baseResumes.length" class="empty-state">No resumes uploaded yet.</div>
 
-    <table v-else class="resume-table">
+    <BaseTable v-else class="resume-table">
       <thead>
         <tr>
           <th>File name</th>
           <th>Version</th>
           <th>Uploaded</th>
-          <th>Coaching</th>
+          <th>Insights</th>
+          <th>Score</th>
           <th></th>
         </tr>
       </thead>
@@ -143,8 +165,14 @@ async function submitRename(id: string) {
           </td>
           <td class="cell-meta">v{{ resume.version_number }}</td>
           <td class="cell-meta">{{ new Date(resume.created_at).toLocaleDateString() }}</td>
-          <td class="cell-coaching">
-            <CoachingStatusChip :status="resume.coaching_status" compact />
+          <td class="cell-insights">
+            <StatusChip v-bind="insightsChipProps(resume.coaching_status)" />
+          </td>
+          <td class="cell-score">
+            <StatusChip
+              v-if="resumesStore.getInsightsAnalysis(resume)"
+              v-bind="scoreChipProps(resumesStore.getInsightsAnalysis(resume)!.overall_score)"
+            />
           </td>
           <td class="cell-actions">
             <ResumeActionsMenu
@@ -156,7 +184,8 @@ async function submitRename(id: string) {
           </td>
         </tr>
       </tbody>
-    </table>
+    </BaseTable>
+    </div>
   </div>
 
   <BaseDialog
@@ -178,26 +207,16 @@ async function submitRename(id: string) {
 
 <style lang="scss" scoped>
 .resumes-page {
+  display: flex;
+  flex-direction: column;
+}
+
+.resumes-content {
   padding: 32px 40px;
 
   @media (max-width: 640px) {
     padding: 20px 16px;
   }
-}
-
-.detail-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  margin-bottom: 20px;
-  gap: 16px;
-}
-
-.detail-title h1 {
-  font-size: 20px;
-  font-weight: 600;
-  color: var(--color-text);
-  line-height: 1.2;
 }
 
 .file-input-hidden {
@@ -226,38 +245,7 @@ async function submitRename(id: string) {
 }
 
 .resume-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 13px;
-
-  th {
-    text-align: left;
-    font-size: 11px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    color: var(--color-text-muted);
-    padding: 0 12px 8px;
-    border-bottom: 1px solid var(--color-border);
-
-    &:first-child { padding-left: 0; }
-    &:last-child { padding-right: 0; }
-  }
-
-  td {
-    padding: 10px 12px;
-    border-bottom: 1px solid var(--color-border);
-    vertical-align: middle;
-
-    &:first-child { padding-left: 0; }
-    &:last-child { padding-right: 0; }
-  }
-
-  tr:last-child td {
-    border-bottom: none;
-  }
-
-  tr.row--busy {
+  :deep(tr.row--busy) {
     opacity: 0.4;
     pointer-events: none;
   }
@@ -282,9 +270,14 @@ async function submitRename(id: string) {
   }
 }
 
-.cell-coaching {
+.cell-insights {
   white-space: nowrap;
 }
+
+.cell-score {
+  white-space: nowrap;
+}
+
 
 .cell-meta {
   white-space: nowrap;

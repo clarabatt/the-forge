@@ -1,10 +1,13 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 
 const props = defineProps<{
   src?: string | null
   name: string
 }>()
+
+const imgSrc = ref(props.src)
+watch(() => props.src, (val) => { imgSrc.value = val })
 
 const initials = computed(() =>
   props.name
@@ -18,7 +21,7 @@ const initials = computed(() =>
 
 <template>
   <div class="avatar">
-    <img v-if="src" :src="src" :alt="name" class="avatar-img" />
+    <img v-if="imgSrc" :src="imgSrc" :alt="name" class="avatar-img" @error="imgSrc = null" />
     <span v-else class="avatar-initials">{{ initials }}</span>
   </div>
 </template>

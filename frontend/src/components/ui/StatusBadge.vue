@@ -1,43 +1,21 @@
 <script setup lang="ts">
-defineProps<{ status: string }>()
+import StatusChip, { type StatusChipVariant } from "@/components/ui/StatusChip.vue";
+import { PipelineStatus } from "@/stores/applications";
+
+const props = defineProps<{ status: string }>();
+
+const config: Record<string, { text: string; variant: StatusChipVariant; loading?: boolean }> = {
+  [PipelineStatus.READY]:     { text: "Ready",      variant: "success" },
+  [PipelineStatus.FAILED]:    { text: "Failed",      variant: "error" },
+  [PipelineStatus.ANALYZING]: { text: "Analyzing…",  variant: "info", loading: true },
+  [PipelineStatus.UPLOADED]:  { text: "Uploaded",    variant: "default" },
+};
+
+function chipProps() {
+  return config[props.status] ?? { text: props.status.replace(/_/g, " "), variant: "default" as StatusChipVariant };
+}
 </script>
 
 <template>
-  <span class="badge" :class="`badge--${status.toLowerCase()}`">
-    {{ status.replace(/_/g, ' ') }}
-  </span>
+  <StatusChip v-bind="chipProps()" />
 </template>
-
-<style lang="scss" scoped>
-.badge {
-  font-size: 11px;
-  font-weight: 500;
-  padding: 3px 8px;
-  border-radius: 99px;
-  background: var(--color-bg-subtle);
-  color: var(--color-text-muted);
-  border: 1px solid var(--color-border);
-  white-space: nowrap;
-
-  &--ready {
-    color: var(--color-success);
-    border-color: var(--color-success);
-  }
-  &--failed {
-    color: var(--color-danger);
-    border-color: var(--color-danger);
-  }
-  &--pending_approval,
-  &--pending_retry {
-    color: var(--color-warning);
-    border-color: var(--color-warning);
-  }
-  &--analyzing,
-  &--tailoring,
-  &--validating,
-  &--uploaded {
-    color: var(--color-primary);
-    border-color: var(--color-primary);
-  }
-}
-</style>

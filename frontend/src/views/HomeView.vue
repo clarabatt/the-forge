@@ -30,7 +30,7 @@ onMounted(() => {
       @close="sidebarOpen = false"
       @new-application="showModal = true"
     />
-    <main class="detail-area">
+    <main class="content-area">
       <div class="mobile-topbar">
         <button class="mobile-menu-btn" aria-label="Open menu" @click="sidebarOpen = true">
           <IconHamburger width="18" height="18" />
@@ -44,10 +44,6 @@ onMounted(() => {
     </main>
   </div>
 
-  <button class="fab" v-if="resumesStore.baseResumes?.length > 0" @click="showModal = true">
-    +
-  </button>
-
   <NewApplicationModal v-if="showModal" @close="showModal = false" />
 </template>
 
@@ -58,7 +54,7 @@ onMounted(() => {
   overflow: hidden;
 }
 
-.detail-area {
+.content-area {
   flex: 1;
   overflow-y: auto;
   background: var(--color-bg);
@@ -116,35 +112,5 @@ onMounted(() => {
   height: 100%;
   color: var(--color-text-muted);
   font-size: 14px;
-}
-
-.fab {
-  position: fixed;
-  bottom: 24px;
-  right: 24px;
-  width: 52px;
-  height: 52px;
-  border-radius: 25%;
-  background: var(--color-primary);
-  color: #fff;
-  font-size: 24px;
-  line-height: 1;
-  border: none;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  transition: background 0.15s;
-
-  &:hover {
-    background: var(--color-primary-hover);
-  }
-
-  @media (max-width: 640px) {
-    bottom: 28px;
-    width: 48px;
-    height: 48px;
-  }
 }
 </style>

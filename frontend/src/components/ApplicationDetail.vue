@@ -7,6 +7,7 @@ import ApplicationActionsMenu from "@/components/ApplicationActionsMenu.vue";
 import ResumeViewer from "@/components/ResumeViewer.vue";
 import SkillsTable from "@/components/SkillsTable.vue";
 import { getAppTitle } from "@/utils/application";
+import TitleBar from "@/components/ui/TitleBar.vue";
 import StatusBadge from "@/components/ui/StatusBadge.vue";
 import AppSelect from "@/components/ui/AppSelect.vue";
 import BaseDialog from "@/components/ui/BaseDialog.vue";
@@ -184,6 +185,8 @@ onUnmounted(closeSSE);
 
 <template>
   <div class="application-detail">
+    <TitleBar title="Applications" />
+    <div class="application-content">
     <div v-if="!store.current" class="detail-empty">Loading…</div>
     <template v-else>
       <header class="detail-header">
@@ -262,6 +265,7 @@ onUnmounted(closeSSE);
         </div>
       </template>
     </template>
+    </div>
   </div>
 
   <BaseDialog
@@ -329,6 +333,11 @@ onUnmounted(closeSSE);
 
 <style lang="scss" scoped>
 .application-detail {
+  display: flex;
+  flex-direction: column;
+}
+
+.application-content {
   padding: 32px 40px;
 
   @media (max-width: 640px) {

@@ -5,6 +5,7 @@ import { useApplicationsStore, type AnalysisFeedback, type Skill } from "@/store
 import ProgressBar from "@/components/ui/ProgressBar.vue";
 import ShimmerBlock from "@/components/ui/ShimmerBlock.vue";
 import MatchBadge from "@/components/ui/MatchBadge.vue";
+import BaseTable from "@/components/ui/BaseTable.vue";
 
 function md(text: string): string {
   return marked.parse(text, { async: false }) as string;
@@ -120,7 +121,7 @@ watch(
         <ProgressBar :pct="feedback.matchPct" color="auto" />
       </div>
 
-      <table class="skills-table">
+      <BaseTable class="skills-table">
         <thead>
           <tr>
             <th class="col-skill">
@@ -156,7 +157,7 @@ watch(
             </td>
           </tr>
         </tbody>
-      </table>
+      </BaseTable>
 
       <!-- AI recruiter feedback -->
       <div v-if="aiFeedback" class="ai-feedback">
@@ -255,31 +256,9 @@ export { SortIcon };
 }
 
 .skills-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 13px;
   margin-bottom: 24px;
 
-  thead tr {
-    border-bottom: 1px solid var(--color-border);
-  }
-
-  th {
-    text-align: left;
-    padding: 0 12px 8px 0;
-  }
-
-  td {
-    padding: 7px 12px 7px 0;
-    color: var(--color-text);
-    border-bottom: 1px solid var(--color-border);
-  }
-
-  tbody tr:last-child td {
-    border-bottom: none;
-  }
-
-  .row--missing td {
+  :deep(.row--missing td) {
     color: var(--color-text-muted);
   }
 }
@@ -292,14 +271,12 @@ export { SortIcon };
   border: none;
   padding: 0;
   cursor: pointer;
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--color-text-muted);
+  color: var(--color-primary);
 
   &:hover {
-    color: var(--color-text);
+    color: var(--color-primary-hover);
   }
 }
 
@@ -355,8 +332,7 @@ export { SortIcon };
 
 // AI recruiter feedback
 .ai-feedback {
-  padding-top: 20px;
-  border-top: 1px solid var(--color-border);
+  padding-top: 10px;
   display: flex;
   flex-direction: column;
   gap: 12px;
