@@ -332,8 +332,7 @@ export { SortIcon };
 
 // AI recruiter feedback
 .ai-feedback {
-  padding-top: 20px;
-  border-top: 1px solid var(--color-border);
+  padding-top: 10px;
   display: flex;
   flex-direction: column;
   gap: 12px;

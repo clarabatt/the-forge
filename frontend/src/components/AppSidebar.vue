@@ -332,7 +332,8 @@ const statusColor: Record<PipelineStatus, string> = {
   }
 
   &.router-link-active {
-    background: var(--color-border);
+    background: var(--color-bg-hover);
+    border-radius: var(--radius);
   }
 
   &:disabled {
@@ -379,11 +380,11 @@ const statusColor: Record<PipelineStatus, string> = {
   cursor: pointer;
 
   &:hover {
-    background: var(--color-border);
+    background: var(--color-bg-hover);
   }
 
   &--active {
-    background: var(--color-border);
+    background: var(--color-bg-hover);
   }
 
   &--icon {
