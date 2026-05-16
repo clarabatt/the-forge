@@ -35,6 +35,10 @@ defineEmits<{ action: [] }>();
   min-height: 3rem;
   border-bottom: 1px solid var(--color-border);
   flex-shrink: 0;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background-color: var(--color-bg);
 }
 
 .title-bar__title {
