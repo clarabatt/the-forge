@@ -4,6 +4,7 @@ import { useRouter } from "vue-router";
 import { useResumesStore, type Resume } from "@/stores/resumes";
 import { useFileUpload } from "@/composables/useFileUpload";
 import BaseDialog from "@/components/ui/BaseDialog.vue";
+import BaseTable from "@/components/ui/BaseTable.vue";
 import CoachingStatusChip from "@/components/ui/CoachingStatusChip.vue";
 import InlineEditForm from "@/components/ui/InlineEditForm.vue";
 import TitleBar from "@/components/ui/TitleBar.vue";
@@ -109,7 +110,7 @@ async function submitRename(id: string) {
 
     <div v-if="!resumesStore.baseResumes.length" class="empty-state">No resumes uploaded yet.</div>
 
-    <table v-else class="resume-table">
+    <BaseTable v-else class="resume-table">
       <thead>
         <tr>
           <th>File name</th>
@@ -156,7 +157,7 @@ async function submitRename(id: string) {
           </td>
         </tr>
       </tbody>
-    </table>
+    </BaseTable>
     </div>
   </div>
 
@@ -217,38 +218,7 @@ async function submitRename(id: string) {
 }
 
 .resume-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 13px;
-
-  th {
-    text-align: left;
-    font-size: 11px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    color: var(--color-text-muted);
-    padding: 0 12px 8px;
-    border-bottom: 1px solid var(--color-border);
-
-    &:first-child { padding-left: 0; }
-    &:last-child { padding-right: 0; }
-  }
-
-  td {
-    padding: 10px 12px;
-    border-bottom: 1px solid var(--color-border);
-    vertical-align: middle;
-
-    &:first-child { padding-left: 0; }
-    &:last-child { padding-right: 0; }
-  }
-
-  tr:last-child td {
-    border-bottom: none;
-  }
-
-  tr.row--busy {
+  :deep(tr.row--busy) {
     opacity: 0.4;
     pointer-events: none;
   }

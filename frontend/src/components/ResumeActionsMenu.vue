@@ -37,7 +37,7 @@ const router = useRouter();
           @select="router.push({ name: 'resume-detail', params: { id: props.resume.id } })"
         >
           <IconLightbulb />
-          View coaching
+          View Insights
         </DropdownMenuItem>
         <DropdownMenuSeparator class="menu-separator" />
         <DropdownMenuItem class="menu-item" @select="emit('download')">
