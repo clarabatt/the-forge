@@ -3,8 +3,8 @@ import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useResumesStore, type Resume } from "@/stores/resumes";
 import TitleBar from "@/components/ui/TitleBar.vue";
-import ResumeCoachingPanel from "@/components/ResumeCoachingPanel.vue";
-import CoachingStatusChip from "@/components/ui/CoachingStatusChip.vue";
+import ResumeInsightsPanel from "@/components/ResumeInsightsPanel.vue";
+import InsightsStatusChip from "@/components/ui/InsightsStatusChip.vue";
 
 const route = useRoute();
 const router = useRouter();
@@ -56,7 +56,7 @@ async function load(id: string) {
 }
 
 const analysis = computed(() =>
-  resume.value ? resumesStore.getCoachingAnalysis(resume.value) : null,
+  resume.value ? resumesStore.getInsightsAnalysis(resume.value) : null,
 );
 
 onMounted(() => load(route.params.id as string));
@@ -79,7 +79,7 @@ onUnmounted(stopPolling);
           <h1>{{ resume.file_name }}</h1>
         </div>
         <div class="header-right">
-          <CoachingStatusChip :status="resume.coaching_status" />
+          <InsightsStatusChip :status="resume.coaching_status" />
         </div>
       </header>
 
@@ -91,7 +91,7 @@ onUnmounted(stopPolling);
 
       <!-- Failed state -->
       <div v-else-if="resume.coaching_status === 'failed'" class="failed-banner">
-        <p>The coaching analysis failed. You can still download your resume.</p>
+        <p>The insights analysis failed. You can still download your resume.</p>
       </div>
 
       <!-- Content grid: coaching left, resume right -->
@@ -107,12 +107,12 @@ onUnmounted(stopPolling);
           </div>
         </div>
         <aside class="content-sidebar">
-          <ResumeCoachingPanel :analysis="analysis" />
+          <ResumeInsightsPanel :analysis="analysis" />
         </aside>
       </div>
 
       <!-- Pending — no analysis yet but also not analyzing -->
-      <div v-else class="state-message">No coaching analysis available for this resume.</div>
+      <div v-else class="state-message">No insights available for this resume.</div>
     </template>
     </div>
   </div>

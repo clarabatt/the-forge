@@ -5,7 +5,7 @@ import { useResumesStore, type Resume } from "@/stores/resumes";
 import { useFileUpload } from "@/composables/useFileUpload";
 import BaseDialog from "@/components/ui/BaseDialog.vue";
 import BaseTable from "@/components/ui/BaseTable.vue";
-import CoachingStatusChip from "@/components/ui/CoachingStatusChip.vue";
+import InsightsStatusChip from "@/components/ui/InsightsStatusChip.vue";
 import InlineEditForm from "@/components/ui/InlineEditForm.vue";
 import TitleBar from "@/components/ui/TitleBar.vue";
 import ResumeActionsMenu from "@/components/ResumeActionsMenu.vue";
@@ -116,7 +116,7 @@ async function submitRename(id: string) {
           <th>File name</th>
           <th>Version</th>
           <th>Uploaded</th>
-          <th>Coaching</th>
+          <th>Insights</th>
           <th></th>
         </tr>
       </thead>
@@ -144,8 +144,8 @@ async function submitRename(id: string) {
           </td>
           <td class="cell-meta">v{{ resume.version_number }}</td>
           <td class="cell-meta">{{ new Date(resume.created_at).toLocaleDateString() }}</td>
-          <td class="cell-coaching">
-            <CoachingStatusChip :status="resume.coaching_status" compact />
+          <td class="cell-insights">
+            <InsightsStatusChip :status="resume.coaching_status" compact />
           </td>
           <td class="cell-actions">
             <ResumeActionsMenu
@@ -243,7 +243,7 @@ async function submitRename(id: string) {
   }
 }
 
-.cell-coaching {
+.cell-insights {
   white-space: nowrap;
 }
 

@@ -1,16 +1,16 @@
 <script setup lang="ts">
 import { ref } from "vue";
-import type { CoachingAnalysis } from "@/stores/resumes";
+import type { InsightsAnalysis } from "@/stores/resumes";
 import IssueList from "@/components/ui/IssueList.vue";
 import QuestionsList from "@/components/ui/QuestionsList.vue";
 
-defineProps<{ analysis: CoachingAnalysis }>();
+defineProps<{ analysis: InsightsAnalysis }>();
 
 const frameworkOpen = ref(false);
 </script>
 
 <template>
-  <div class="coaching-panel">
+  <div class="insights-panel">
     <!-- Overall score -->
     <div class="panel-header">
       <span class="score-badge" :class="`score-badge--${analysis.overall_score}`">
@@ -22,7 +22,7 @@ const frameworkOpen = ref(false);
               : "Strong"
         }}
       </span>
-      <span class="panel-header-label">Overall coaching score</span>
+      <span class="panel-header-label">Overall insights score</span>
     </div>
 
     <!-- Global issues -->
@@ -150,7 +150,7 @@ const frameworkOpen = ref(false);
 </template>
 
 <style lang="scss" scoped>
-.coaching-panel {
+.insights-panel {
   display: flex;
   flex-direction: column;
   gap: 20px;

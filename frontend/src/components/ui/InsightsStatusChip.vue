@@ -8,21 +8,21 @@ const props = defineProps<{
 
 const label = {
   analyzing: "Analyzing…",
-  done: props.compact ? "Ready" : "Coaching ready",
+  done: "Ready",
   failed: props.compact ? "Failed" : "Analysis failed",
   pending: "Pending",
 };
 </script>
 
 <template>
-  <span class="coaching-chip" :class="`coaching-chip--${status}`">
+  <span class="insights-chip" :class="`insights-chip--${status}`">
     <Spinner v-if="status === 'analyzing'" :size="compact ? 10 : 11" />
     {{ label[status] }}
   </span>
 </template>
 
 <style lang="scss" scoped>
-.coaching-chip {
+.insights-chip {
   display: inline-flex;
   align-items: center;
   gap: 5px;
