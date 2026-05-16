@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import BaseButton from "@/components/ui/BaseButton.vue";
+import IconLogo from "@/components/icons/IconLogo.vue";
 
 function loginWithGoogle() {
   window.location.href = "/auth/google/login";
@@ -9,6 +10,7 @@ function loginWithGoogle() {
 <template>
   <div class="login-page">
     <div class="login-card">
+      <IconLogo class="login-logo" />
       <h1 class="login-title">The Forge</h1>
       <p class="login-subtitle">AI-powered resume tailoring</p>
       <BaseButton variant="primary" block @click="loginWithGoogle">Sign in with Google</BaseButton>
@@ -33,6 +35,12 @@ function loginWithGoogle() {
   text-align: center;
   width: 100%;
   max-width: 380px;
+}
+
+.login-logo {
+  width: 48px;
+  height: auto;
+  margin-bottom: 16px;
 }
 
 .login-title {

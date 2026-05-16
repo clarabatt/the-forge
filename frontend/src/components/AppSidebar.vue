@@ -16,6 +16,7 @@ import { getAppTitle } from "@/utils/application";
 import ProgressBar from "@/components/ui/ProgressBar.vue";
 import Avatar from "@/components/ui/Avatar.vue";
 import IconHamburger from "@/components/icons/IconHamburger.vue";
+import IconLogo from "@/components/icons/IconLogo.vue";
 import IconFolder from "@/components/icons/IconFolder.vue";
 import IconUpload from "@/components/icons/IconUpload.vue";
 import IconPlus from "@/components/icons/IconPlus.vue";
@@ -78,7 +79,10 @@ const statusColor: Record<PipelineStatus, string> = {
   >
     <!-- Header -->
     <div class="sidebar-header">
-      <RouterLink v-if="!collapsed" to="/" class="sidebar-title">The Forge</RouterLink>
+      <RouterLink v-if="!collapsed" to="/" class="sidebar-title">
+        <IconLogo />
+        The Forge
+      </RouterLink>
       <button
         class="sidebar-toggle"
         :aria-label="collapsed ? 'Expand sidebar' : 'Collapse sidebar'"
@@ -267,6 +271,9 @@ const statusColor: Record<PipelineStatus, string> = {
 }
 
 .sidebar-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   font-size: 16px;
   font-weight: 700;
   color: var(--color-text);
@@ -438,6 +445,7 @@ const statusColor: Record<PipelineStatus, string> = {
   padding: 12px 16px;
   flex-shrink: 0;
   background: var(--color-bg-subtle);
+  border-top: 1px solid var(--color-border);
 
   &--collapsed {
     justify-content: center;
