@@ -298,7 +298,7 @@ const statusColor: Record<PipelineStatus, string> = {
 }
 
 .sidebar-section {
-  padding: 6px 16px;
+  padding: 6px 12px;
 
   &:first-child {
     padding-top: 18px;
