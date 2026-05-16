@@ -4,7 +4,17 @@ import { useRoute, useRouter } from "vue-router";
 import { useResumesStore, type Resume } from "@/stores/resumes";
 import TitleBar from "@/components/ui/TitleBar.vue";
 import ResumeInsightsPanel from "@/components/ResumeInsightsPanel.vue";
-import InsightsStatusChip from "@/components/ui/InsightsStatusChip.vue";
+import StatusChip, { type StatusChipVariant } from "@/components/ui/StatusChip.vue";
+
+function insightsChipProps(status: string): { text: string; variant: StatusChipVariant; loading?: boolean } {
+  const map: Record<string, { text: string; variant: StatusChipVariant; loading?: boolean }> = {
+    pending:   { text: "Pending",    variant: "default" },
+    analyzing: { text: "Analyzing…", variant: "info", loading: true },
+    done:      { text: "Ready",      variant: "success" },
+    failed:    { text: "Failed",     variant: "error" },
+  };
+  return map[status] ?? { text: status, variant: "default" };
+}
 
 const route = useRoute();
 const router = useRouter();
@@ -79,7 +89,7 @@ onUnmounted(stopPolling);
           <h1>{{ resume.file_name }}</h1>
         </div>
         <div class="header-right">
-          <InsightsStatusChip :status="resume.coaching_status" />
+          <StatusChip v-bind="insightsChipProps(resume.coaching_status)" />
         </div>
       </header>
 

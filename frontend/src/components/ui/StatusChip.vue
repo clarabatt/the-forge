@@ -1,28 +1,34 @@
+<script lang="ts">
+export const StatusChipVariant = {
+  default: "default",
+  success: "success",
+  warning: "warning",
+  error: "error",
+  info: "info",
+} as const;
+
+export type StatusChipVariant = (typeof StatusChipVariant)[keyof typeof StatusChipVariant];
+</script>
+
 <script setup lang="ts">
 import Spinner from "@/components/ui/Spinner.vue";
 
-const props = defineProps<{
-  status: "pending" | "analyzing" | "done" | "failed";
-  compact?: boolean;
+defineProps<{
+  text: string;
+  variant?: StatusChipVariant;
+  loading?: boolean;
 }>();
-
-const label = {
-  analyzing: "Analyzing…",
-  done: "Ready",
-  failed: props.compact ? "Failed" : "Analysis failed",
-  pending: "Pending",
-};
 </script>
 
 <template>
-  <span class="insights-chip" :class="`insights-chip--${status}`">
-    <Spinner v-if="status === 'analyzing'" :size="compact ? 10 : 11" />
-    {{ label[status] }}
+  <span class="status-chip" :class="`status-chip--${variant ?? 'default'}`">
+    <Spinner v-if="loading" :size="10" />
+    {{ text }}
   </span>
 </template>
 
 <style lang="scss" scoped>
-.insights-chip {
+.status-chip {
   display: inline-flex;
   align-items: center;
   gap: 5px;
@@ -34,17 +40,22 @@ const label = {
   color: var(--color-text-muted);
   white-space: nowrap;
 
-  &--analyzing {
+  &--info {
     color: var(--color-primary);
     border-color: var(--color-primary);
   }
 
-  &--done {
+  &--success {
     color: var(--color-success);
     border-color: var(--color-success);
   }
 
-  &--failed {
+  &--warning {
+    color: var(--color-warning);
+    border-color: var(--color-warning);
+  }
+
+  &--error {
     color: var(--color-danger);
     border-color: var(--color-danger);
   }

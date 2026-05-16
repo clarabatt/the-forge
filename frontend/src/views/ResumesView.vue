@@ -2,10 +2,11 @@
 import { ref } from "vue";
 import { useRouter } from "vue-router";
 import { useResumesStore, type Resume } from "@/stores/resumes";
+import { type StatusChipVariant } from "@/components/ui/StatusChip.vue";
 import { useFileUpload } from "@/composables/useFileUpload";
 import BaseDialog from "@/components/ui/BaseDialog.vue";
 import BaseTable from "@/components/ui/BaseTable.vue";
-import InsightsStatusChip from "@/components/ui/InsightsStatusChip.vue";
+import StatusChip from "@/components/ui/StatusChip.vue";
 import InlineEditForm from "@/components/ui/InlineEditForm.vue";
 import TitleBar from "@/components/ui/TitleBar.vue";
 import ResumeActionsMenu from "@/components/ResumeActionsMenu.vue";
@@ -75,6 +76,25 @@ function cancelRename() {
   renameError.value = null;
 }
 
+function insightsChipProps(status: string): { text: string; variant: StatusChipVariant; loading?: boolean } {
+  const map: Record<string, { text: string; variant: StatusChipVariant; loading?: boolean }> = {
+    pending:   { text: "Pending",    variant: "default" },
+    analyzing: { text: "Analyzing…", variant: "info", loading: true },
+    done:      { text: "Ready",      variant: "success" },
+    failed:    { text: "Failed",     variant: "error" },
+  };
+  return map[status] ?? { text: status, variant: "default" };
+}
+
+function scoreChipProps(score: string): { text: string; variant: StatusChipVariant } {
+  const map: Record<string, { text: string; variant: StatusChipVariant }> = {
+    needs_work: { text: "Needs work", variant: "error" },
+    decent:     { text: "Decent",     variant: "warning" },
+    strong:     { text: "Strong",     variant: "success" },
+  };
+  return map[score] ?? { text: score, variant: "default" };
+}
+
 async function submitRename(id: string) {
   const name = renameValue.value.trim();
   if (!name) return;
@@ -117,6 +137,7 @@ async function submitRename(id: string) {
           <th>Version</th>
           <th>Uploaded</th>
           <th>Insights</th>
+          <th>Score</th>
           <th></th>
         </tr>
       </thead>
@@ -145,7 +166,13 @@ async function submitRename(id: string) {
           <td class="cell-meta">v{{ resume.version_number }}</td>
           <td class="cell-meta">{{ new Date(resume.created_at).toLocaleDateString() }}</td>
           <td class="cell-insights">
-            <InsightsStatusChip :status="resume.coaching_status" compact />
+            <StatusChip v-bind="insightsChipProps(resume.coaching_status)" />
+          </td>
+          <td class="cell-score">
+            <StatusChip
+              v-if="resumesStore.getInsightsAnalysis(resume)"
+              v-bind="scoreChipProps(resumesStore.getInsightsAnalysis(resume)!.overall_score)"
+            />
           </td>
           <td class="cell-actions">
             <ResumeActionsMenu
@@ -246,6 +273,11 @@ async function submitRename(id: string) {
 .cell-insights {
   white-space: nowrap;
 }
+
+.cell-score {
+  white-space: nowrap;
+}
+
 
 .cell-meta {
   white-space: nowrap;
