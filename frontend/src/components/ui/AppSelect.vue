@@ -58,6 +58,7 @@ const selectValue = computed({
   border: 1px solid var(--color-border);
   border-radius: var(--radius);
   font-size: 13px;
+  font-family: inherit;
   color: var(--color-text);
   cursor: pointer;
   gap: 4px;
@@ -84,6 +85,7 @@ const selectValue = computed({
 .app-select-item {
   padding: 7px 10px;
   font-size: 13px;
+  font-family: inherit;
   border-radius: var(--radius);
   cursor: pointer;
   user-select: none;
