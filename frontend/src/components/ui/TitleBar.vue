@@ -4,6 +4,7 @@ import IconUpload from "@/components/icons/IconUpload.vue";
 
 defineProps<{
   title: string;
+  titleUrl?: string;
   actionLabel?: string;
   actionDisabled?: boolean;
 }>();
@@ -13,7 +14,10 @@ defineEmits<{ action: [] }>();
 
 <template>
   <div class="title-bar">
-    <h2 class="title-bar__title">{{ title }}</h2>
+    <RouterLink v-if="titleUrl" class="title-bar__title title-bar__title--link" :to="titleUrl">{{
+      title
+    }}</RouterLink>
+    <h2 v-else class="title-bar__title">{{ title }}</h2>
     <BaseButton v-if="actionLabel" :disabled="actionDisabled" @click="$emit('action')">
       <IconUpload />
       {{ actionLabel }}
@@ -37,5 +41,14 @@ defineEmits<{ action: [] }>();
   font-size: 16px;
   font-weight: 700;
   color: var(--color-text);
+
+  &--link {
+    transition: 0.2s color;
+
+    &:hover {
+      color: var(--color-primary-hover);
+      transition: 0.2s color;
+    }
+  }
 }
 </style>

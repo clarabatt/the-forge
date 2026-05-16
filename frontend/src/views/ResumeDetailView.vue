@@ -2,6 +2,7 @@
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useResumesStore, type Resume } from "@/stores/resumes";
+import TitleBar from "@/components/ui/TitleBar.vue";
 import ResumeCoachingPanel from "@/components/ResumeCoachingPanel.vue";
 import CoachingStatusChip from "@/components/ui/CoachingStatusChip.vue";
 
@@ -68,17 +69,14 @@ onUnmounted(stopPolling);
 
 <template>
   <div class="resume-detail">
+    <TitleBar title="Resumes" title-url="/resumes" />
+    <div class="resume-content">
     <div v-if="error" class="state-message state-message--error">{{ error }}</div>
     <div v-else-if="!resume" class="state-message">Loading…</div>
     <template v-else>
       <header class="detail-header">
         <div class="detail-title">
           <h1>{{ resume.file_name }}</h1>
-          <nav class="breadcrumbs">
-            <RouterLink class="breadcrumb-link" :to="{ name: 'resumes' }">Resumes</RouterLink>
-            <span class="breadcrumb-sep">/</span>
-            <span class="breadcrumb-current">{{ resume.file_name }}</span>
-          </nav>
         </div>
         <div class="header-right">
           <CoachingStatusChip :status="resume.coaching_status" />
@@ -116,11 +114,17 @@ onUnmounted(stopPolling);
       <!-- Pending — no analysis yet but also not analyzing -->
       <div v-else class="state-message">No coaching analysis available for this resume.</div>
     </template>
+    </div>
   </div>
 </template>
 
 <style lang="scss" scoped>
 .resume-detail {
+  display: flex;
+  flex-direction: column;
+}
+
+.resume-content {
   padding: 32px 40px;
 
   @media (max-width: 640px) {
@@ -163,35 +167,6 @@ onUnmounted(stopPolling);
   }
 }
 
-.breadcrumbs {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 12px;
-}
-
-.breadcrumb-link {
-  color: var(--color-text-muted);
-  text-decoration: none;
-
-  &:hover {
-    color: var(--color-primary);
-    text-decoration: underline;
-  }
-}
-
-.breadcrumb-sep {
-  color: var(--color-border);
-  user-select: none;
-}
-
-.breadcrumb-current {
-  color: var(--color-text-muted);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 240px;
-}
 
 .header-right {
   display: flex;
