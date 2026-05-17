@@ -11,6 +11,11 @@ interface User {
 interface Usage {
   cost_usd: number
   monthly_cap_usd: number
+  breakdown: {
+    llm_usd: number
+    infra_usd: number
+    taxes_usd: number
+  }
 }
 
 export const useAuthStore = defineStore('auth', () => {

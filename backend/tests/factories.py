@@ -3,7 +3,8 @@ from datetime import datetime, timedelta
 
 import pytest
 from sqlmodel import Session
-
+from backend.pricing import full_cost_breakdown
+from backend.config import INFRA_MARKUP_PCT, TAX_RATE
 from backend.database.models import (
     AgentName,
     Application,
@@ -116,13 +117,21 @@ def LlmUsageLogFactory(session: Session, UserFactory):
     def factory(**kwargs) -> LlmUsageLog:
         if "user_id" not in kwargs:
             kwargs["user_id"] = UserFactory().id
+        model = kwargs.get("model", "gemini-2.5-flash")
+        inp = kwargs.get("input_tokens", 100)
+        out = kwargs.get("output_tokens", 50)
+        llm, infra, taxes, total = full_cost_breakdown(model, inp, out, INFRA_MARKUP_PCT, TAX_RATE)
         log = LlmUsageLog(
             user_id=kwargs["user_id"],
             application_id=kwargs.get("application_id", None),
             agent_name=kwargs.get("agent_name", AgentName.JD),
-            model=kwargs.get("model", "claude-haiku-4-5"),
-            input_tokens=kwargs.get("input_tokens", 100),
-            output_tokens=kwargs.get("output_tokens", 50),
+            model=model,
+            input_tokens=inp,
+            output_tokens=out,
+            llm_cost_usd=llm,
+            infra_cost_usd=infra,
+            taxes_cost_usd=taxes,
+            total_cost_usd=total,
             created_at=kwargs.get("created_at", datetime.utcnow()),
         )
         session.add(log)

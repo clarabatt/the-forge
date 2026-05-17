@@ -60,12 +60,13 @@ def test_get_usage_returns_zero_when_no_logs(
     assert resp.status_code == 200
     body = resp.json()
     assert body["cost_usd"] == 0.0
-    assert body["input_tokens"] == 0
-    assert body["output_tokens"] == 0
+    assert body["breakdown"]["llm_usd"] == 0.0
+    assert body["breakdown"]["infra_usd"] == 0.0
+    assert body["breakdown"]["taxes_usd"] == 0.0
     assert "monthly_cap_usd" in body
 
 
-def test_get_usage_aggregates_token_counts(
+def test_get_usage_aggregates_costs(
     client: TestClient, UserFactory, LlmUsageLogFactory, session_cookie
 ):
     user = UserFactory()
@@ -80,6 +81,11 @@ def test_get_usage_aggregates_token_counts(
 
     assert resp.status_code == 200
     body = resp.json()
-    assert body["input_tokens"] == 300
-    assert body["output_tokens"] == 150
     assert body["cost_usd"] > 0
+    assert body["breakdown"]["llm_usd"] > 0
+    assert body["breakdown"]["infra_usd"] > 0
+    assert body["breakdown"]["taxes_usd"] > 0
+    assert abs(
+        body["breakdown"]["llm_usd"] + body["breakdown"]["infra_usd"] + body["breakdown"]["taxes_usd"]
+        - body["cost_usd"]
+    ) < 0.000001
