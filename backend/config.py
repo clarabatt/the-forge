@@ -27,3 +27,9 @@ class Settings(BaseSettings):
 
 
 settings = Settings()
+
+# Fraction added on top of LLM cost to cover infra. Update when the monthly GCP bill changes.
+INFRA_MARKUP_PCT: float = 0.845
+
+# Canadian GST/HST observed on GCP billing (2026-04: $0.083828 on $0.670624).
+TAX_RATE: float = 0.125

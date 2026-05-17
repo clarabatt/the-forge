@@ -19,7 +19,9 @@ from backend.config import settings
 from backend.database.models import AgentName, Application, ApplicationStatus, CoverLetter, LlmUsageLog, PipelineStatus, Resume, Skill, User
 from backend.database.repositories import ApplicationRepository, CoverLetterRepository, SkillRepository
 from backend.database.session import get_session
+from backend.config import INFRA_MARKUP_PCT, TAX_RATE
 from backend.gcs import download_bytes
+from backend.pricing import full_cost_breakdown
 
 router = APIRouter()
 
@@ -315,13 +317,22 @@ def generate_cover_letter(
             questions=json.dumps(cl_result["questions"]),
         ))
 
+    _inp = cl_result["usage"].get("input_tokens", 0)
+    _out = cl_result["usage"].get("output_tokens", 0)
+    _llm, _infra, _taxes, _total = full_cost_breakdown(
+        settings.gemini_model, _inp, _out, INFRA_MARKUP_PCT, TAX_RATE
+    )
     log = LlmUsageLog(
         user_id=user.id,
         application_id=application_id,
         agent_name=AgentName.COVER_LETTER,
         model=settings.gemini_model,
-        input_tokens=cl_result["usage"].get("input_tokens", 0),
-        output_tokens=cl_result["usage"].get("output_tokens", 0),
+        input_tokens=_inp,
+        output_tokens=_out,
+        llm_cost_usd=_llm,
+        infra_cost_usd=_infra,
+        taxes_cost_usd=_taxes,
+        total_cost_usd=_total,
     )
     session.add(log)
     session.commit()

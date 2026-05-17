@@ -57,3 +57,20 @@ class LlmUsageLogRepository(BaseRepository[LlmUsageLog, uuid.UUID]):
             ).group_by(LlmUsageLog.model)
         ).all()
         return [(row[0], int(row[1]), int(row[2])) for row in rows]
+
+    def get_monthly_cost_totals(
+        self, user_id: uuid.UUID, since: datetime
+    ) -> tuple[float, float, float, float]:
+        """Returns (llm_cost, infra_cost, taxes_cost, total_cost) for a user since `since`."""
+        row = self.session.exec(
+            select(
+                func.coalesce(func.sum(LlmUsageLog.llm_cost_usd), 0),
+                func.coalesce(func.sum(LlmUsageLog.infra_cost_usd), 0),
+                func.coalesce(func.sum(LlmUsageLog.taxes_cost_usd), 0),
+                func.coalesce(func.sum(LlmUsageLog.total_cost_usd), 0),
+            ).where(
+                LlmUsageLog.user_id == user_id,
+                LlmUsageLog.created_at >= since,
+            )
+        ).one()
+        return float(row[0]), float(row[1]), float(row[2]), float(row[3])

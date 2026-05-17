@@ -14,17 +14,18 @@ class ModelPricing:
     output_per_token: float
 
 
-# Published Google AI pricing as of early 2026 (standard tier, ≤200K context window).
-# Source: https://ai.google.dev/pricing
+# Rates verified against GCP billing (2026-04).
+# gemini-2.5-flash billed in thinking mode: output at $3.465/1M, input at $0.4158/1M.
 _PRICING: dict[str, ModelPricing] = {
-    "gemini-2.5-pro":    ModelPricing(1.25  / 1_000_000, 10.00 / 1_000_000),
-    "gemini-2.5-flash":  ModelPricing(0.15  / 1_000_000,  0.60 / 1_000_000),
-    "gemini-2.0-flash":  ModelPricing(0.10  / 1_000_000,  0.40 / 1_000_000),
-    "gemini-1.5-pro":    ModelPricing(1.25  / 1_000_000,  5.00 / 1_000_000),
-    "gemini-1.5-flash":  ModelPricing(0.075 / 1_000_000,  0.30 / 1_000_000),
-    # Gemini 3 series (estimated at Flash tier until official pricing is published)
-    "gemini-3-pro":      ModelPricing(1.25  / 1_000_000, 10.00 / 1_000_000),
-    "gemini-3-flash":    ModelPricing(0.15  / 1_000_000,  0.60 / 1_000_000),
+    "gemini-2.5-pro":         ModelPricing(1.25   / 1_000_000, 10.00  / 1_000_000),
+    "gemini-2.5-flash":       ModelPricing(0.4158 / 1_000_000,  3.465 / 1_000_000),
+    "gemini-2.0-flash":       ModelPricing(0.10   / 1_000_000,  0.40  / 1_000_000),
+    "gemini-1.5-pro":         ModelPricing(1.25   / 1_000_000,  5.00  / 1_000_000),
+    "gemini-1.5-flash":       ModelPricing(0.075  / 1_000_000,  0.30  / 1_000_000),
+    # gemini-3-flash-preview bills as gemini-2.5-flash on GCP
+    "gemini-3-flash-preview": ModelPricing(0.4158 / 1_000_000,  3.465 / 1_000_000),
+    "gemini-3-pro":           ModelPricing(1.25   / 1_000_000, 10.00  / 1_000_000),
+    "gemini-3-flash":         ModelPricing(0.4158 / 1_000_000,  3.465 / 1_000_000),
 }
 
 # Safe default for models not in the table (Flash-tier pricing)
@@ -53,3 +54,14 @@ def token_cost(model: str, input_tokens: int, output_tokens: int) -> float:
     """Return USD cost for the given model and token counts."""
     p = get_pricing(model)
     return input_tokens * p.input_per_token + output_tokens * p.output_per_token
+
+
+def full_cost_breakdown(
+    model: str, input_tokens: int, output_tokens: int,
+    infra_markup_pct: float, tax_rate: float,
+) -> tuple[float, float, float, float]:
+    """Return (llm_cost, infra_cost, taxes_cost, total_cost) for a single LLM call."""
+    llm = token_cost(model, input_tokens, output_tokens)
+    infra = llm * infra_markup_pct
+    taxes = (llm + infra) * tax_rate
+    return llm, infra, taxes, llm + infra + taxes

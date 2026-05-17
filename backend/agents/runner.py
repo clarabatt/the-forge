@@ -15,7 +15,7 @@ from concurrent.futures import ThreadPoolExecutor
 from sqlmodel import Session
 
 from backend.agents import cover_letter_agent, feedback_agent, jd_agent, resume_agent, skill_verifier_agent
-from backend.config import settings
+from backend.config import INFRA_MARKUP_PCT, TAX_RATE, settings
 from backend.database.models import (
     AgentName,
     Application,
@@ -26,6 +26,7 @@ from backend.database.models import (
     SkillMatchStatus,
 )
 from backend.database.session import engine
+from backend.pricing import full_cost_breakdown
 
 logger = logging.getLogger(__name__)
 
@@ -48,13 +49,22 @@ def _log_usage(
     agent_name: AgentName,
     usage: dict,
 ) -> None:
+    inp = usage.get("input_tokens", 0)
+    out = usage.get("output_tokens", 0)
+    llm, infra, taxes, total = full_cost_breakdown(
+        settings.gemini_model, inp, out, INFRA_MARKUP_PCT, TAX_RATE
+    )
     log = LlmUsageLog(
         user_id=app.user_id,
         application_id=app.id,
         agent_name=agent_name,
         model=settings.gemini_model,
-        input_tokens=usage.get("input_tokens", 0),
-        output_tokens=usage.get("output_tokens", 0),
+        input_tokens=inp,
+        output_tokens=out,
+        llm_cost_usd=llm,
+        infra_cost_usd=infra,
+        taxes_cost_usd=taxes,
+        total_cost_usd=total,
     )
     session.add(log)
     session.commit()

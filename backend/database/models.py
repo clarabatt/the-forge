@@ -139,6 +139,10 @@ class LlmUsageLog(SQLModel, table=True):
     model: str
     input_tokens: int
     output_tokens: int
+    llm_cost_usd: float = Field(default=0.0)
+    infra_cost_usd: float = Field(default=0.0)
+    taxes_cost_usd: float = Field(default=0.0)
+    total_cost_usd: float = Field(default=0.0)
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
     user: Optional[User] = Relationship(back_populates="llm_usage_logs")
